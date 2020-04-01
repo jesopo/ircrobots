@@ -1,1 +1,2 @@
-ircstates ==0.7.0
+ircstates        ==0.7.0
+asyncio-throttle ==0.1.1
