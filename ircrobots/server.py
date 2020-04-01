@@ -66,7 +66,6 @@ class Server(IServer):
             elif emit.subcommand in ["ACK", "NAK"]:
                 await self._cap_ack(emit)
 
-
     async def _on_read_line(self, line: Line):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
@@ -74,11 +73,6 @@ class Server(IServer):
     async def _read_lines(self) -> List[Tuple[Line, List[Emit]]]:
         data = await self._reader.read(1024)
         lines = self.recv(data)
-
-        for line, emits in lines:
-            for emit in emits:
-                await self._on_read_emit(line, emit)
-            await self._on_read_line(line)
         return lines
 
     async def line_written(self, line: Line):

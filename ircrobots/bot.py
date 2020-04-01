@@ -40,10 +40,13 @@ class Bot(object):
             async def _read():
                 while not tg.cancel_scope.cancel_called:
                     lines = await server._read_lines()
+
                     for line, emits in lines:
                         for emit in emits:
-                            await self.emit_read(server, emit)
-                        await self.line_read(server, line)
+                            await tg.spawn(server._on_read_emit, line, emit)
+                            await tg.spawn(self.emit_read, server, emit)
+                        await tg.spawn(server._on_read_line, line)
+                        await tg.spawn(self.line_read, server, line)
                 await tg.cancel_scope.cancel()
 
             async def _write():
