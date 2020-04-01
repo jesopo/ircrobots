@@ -19,8 +19,12 @@ class Bot(object):
     async def disconnected(self, server: Server):
         await asyncio.sleep(RECONNECT_DELAY)
         await self.add_server(server.name, server.params)
+
     async def line_read(self, server: Server, line: Line):
         pass
+    async def emit_read(self, server: Server, line: Line):
+        pass
+
     async def line_send(self, server: Server, line: Line):
         pass
 
@@ -36,7 +40,9 @@ class Bot(object):
             async def _read():
                 while not tg.cancel_scope.cancel_called:
                     lines = await server._read_lines()
-                    for line in lines:
+                    for line, emits in lines:
+                        for emit in emits:
+                            await self.emit_read(server, emit)
                         await self.line_read(server, line)
                 await tg.cancel_scope.cancel()
 
