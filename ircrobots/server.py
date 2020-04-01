@@ -59,24 +59,6 @@ class Server(IServer):
 
         self.params = params
 
-    async def queue_capability(self, cap: Capability):
-        self._cap_queue.add(cap)
-    async def _cap_ls_done(self):
-        caps = CAPS+list(self._cap_queue)
-        self._cap_queue.clear()
-
-        matches = list(filter(bool,
-            (c.available(self.available_caps) for c in caps)))
-        if matches:
-            self._requested_caps = matches
-            await self.send(build("CAP", ["REQ", " ".join(matches)]))
-    async def _cap_ack(self, emit: Emit):
-        for cap in (emit.tokens or []):
-            if cap in self._requested_caps:
-                self._requested_caps.remove(cap)
-        if not self._requested_caps:
-            await self.send(build("CAP", ["END"]))
-
     async def _on_read_emit(self, line: Line, emit: Emit):
         if emit.command == "CAP":
             if emit.subcommand == "LS" and emit.finished:
@@ -84,8 +66,10 @@ class Server(IServer):
             elif emit.subcommand in ["ACK", "NAK"]:
                 await self._cap_ack(emit)
 
+
     async def _on_read_line(self, line: Line):
-        pass
+        if line.command == "PING":
+            await self.send(build("PONG", line.params))
 
     async def _read_lines(self) -> List[Tuple[Line, List[Emit]]]:
         data = await self._reader.read(1024)
@@ -112,3 +96,23 @@ class Server(IServer):
                 self._writer.write(f"{line.format()}\r\n".encode("utf8"))
         await self._writer.drain()
         return lines
+
+    # CAP-related
+    async def queue_capability(self, cap: Capability):
+        self._cap_queue.add(cap)
+    async def _cap_ls_done(self):
+        caps = CAPS+list(self._cap_queue)
+        self._cap_queue.clear()
+
+        matches = list(filter(bool,
+            (c.available(self.available_caps) for c in caps)))
+        if matches:
+            self._requested_caps = matches
+            await self.send(build("CAP", ["REQ", " ".join(matches)]))
+    async def _cap_ack(self, emit: Emit):
+        for cap in (emit.tokens or []):
+            if cap in self._requested_caps:
+                self._requested_caps.remove(cap)
+        if not self._requested_caps:
+            await self.send(build("CAP", ["END"]))
+    # /CAP-related
