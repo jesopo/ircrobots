@@ -12,9 +12,13 @@ SERVERS = [
 
 class Bot(BaseBot):
     async def line_read(self, server: Server, line: Line):
+        print(f"{server.name}< {line.format()}")
         if line.command == "001":
             print(f"connected to {server.isupport.network}")
             await server.send(build("JOIN", ["#testchannel"]))
+
+    async def line_send(self, server: Server, line: Line):
+        print(f"{server.name}> {line.format()}")
 
 async def main():
     bot = Bot()
