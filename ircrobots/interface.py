@@ -1,5 +1,6 @@
-from typing import Awaitable, Iterable, List, Optional
-from enum import IntEnum
+from asyncio import Future
+from typing  import Awaitable, Iterable, List, Optional
+from enum    import IntEnum
 
 from ircstates import Server
 from irctokens import Line
@@ -13,11 +14,12 @@ class SendPriority(IntEnum):
     LOW    = 20
     DEFAULT = MEDIUM
 
-class PriorityLine(object):
+class SentLine(object):
     def __init__(self, priority: int, line: Line):
-        self.priority = priority
-        self.line = line
-    def __lt__(self, other: "PriorityLine") -> bool:
+        self.priority       = priority
+        self.line           = line
+        self.future: Future = Future()
+    def __lt__(self, other: "SentLine") -> bool:
         return self.priority < other.priority
 
 class ICapability(object):
