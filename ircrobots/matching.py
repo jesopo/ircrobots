@@ -47,3 +47,8 @@ class Literal(ResponseParam):
         self._value = value
     def match(self, arg: str) -> bool:
         return self._value == arg
+class Not(ResponseParam):
+    def __init__(self, param: ResponseParam):
+        self._param = param
+    def match(self, arg: str) -> bool:
+        return not self._param.match(arg)
