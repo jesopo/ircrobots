@@ -1,4 +1,5 @@
-import asyncio, ssl
+import asyncio
+from ssl         import SSLContext
 from asyncio     import Future, PriorityQueue
 from typing      import Awaitable, List, Optional, Set, Tuple
 
@@ -11,8 +12,7 @@ from .interface import (ConnectionParams, ICapability, IServer, PriorityLine,
     SendPriority)
 from .matching  import BaseResponse
 from .sasl      import SASLContext, SASLResult
-
-sc = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+from .security  import ssl_context
 
 THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
@@ -44,7 +44,10 @@ class Server(IServer):
         self.throttle.period     = time
 
     async def connect(self, params: ConnectionParams):
-        cur_ssl = sc if params.ssl else None
+        cur_ssl: Optional[SSLContext] = None
+        if params.ssl:
+            cur_ssl = ssl_context(params.ssl_verify)
+
         reader, writer = await asyncio.open_connection(
             params.host,
             params.port,
