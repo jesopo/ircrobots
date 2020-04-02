@@ -70,9 +70,12 @@ class Server(IServer):
         await CAPContext(self).handshake()
 
     async def _on_read_emit(self, line: Line, emit: Emit):
-        if emit.command == "CAP":
+        if emit.command   == "CAP":
             if emit.subcommand == "NEW":
                 await self._cap_new(emit)
+        elif emit.command == "JOIN":
+            if emit.self:
+                await self.send(build("MODE", [emit.channel.name]))
 
     async def _on_read_line(self, line: Line):
         for i, (response, future) in enumerate(self._wait_for):
