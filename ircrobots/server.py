@@ -13,28 +13,13 @@ from irctokens        import build, Line, tokenise
 from .ircv3     import Capability, CAPS, CAP_SASL
 from .interface import ConnectionParams, IServer, PriorityLine, SendPriority
 from .matching  import BaseResponse, Response, Numerics, ParamAny, Literal
+from .sasl      import (SASLResult, SASLUnkownMechanismError,
+    SASL_USERPASS_MECHANISMS)
 
 sc = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 
 THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
-
-SASL_USERPASS_MECHANISMS = [
-    "SCRAM-SHA-512",
-    "SCRAM-SHA-256",
-    "SCRAM-SHA-1",
-    "PLAIN"
-]
-
-class SASLResult(Enum):
-    SUCCESS = 1
-    FAILURE = 2
-    ALREADY = 3
-
-class SASLError(Exception):
-    pass
-class SASLUnkownMechanismError(SASLError):
-    pass
 
 class Server(IServer):
     _reader: asyncio.StreamReader
