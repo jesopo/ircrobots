@@ -15,6 +15,7 @@ SASL_USERPASS_MECHANISMS = [
 ]
 
 class SASLResult(Enum):
+    NONE    = 0
     SUCCESS = 1
     FAILURE = 2
     ALREADY = 3
