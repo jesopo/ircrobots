@@ -1,7 +1,6 @@
 from typing      import Optional
 from enum        import Enum
 from base64      import b64encode
-from dataclasses import dataclass
 from irctokens   import build
 
 from .matching import Response, Numerics, ParamAny

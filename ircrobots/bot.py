@@ -1,7 +1,7 @@
-import asyncio, inspect
+import asyncio
 import anyio
 
-from typing import Any, Awaitable, Callable, cast, Dict, List, Tuple
+from typing import Dict
 from irctokens import Line
 
 from .server import ConnectionParams, Server

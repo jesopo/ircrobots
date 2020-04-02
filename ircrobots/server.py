@@ -1,9 +1,6 @@
 import asyncio, ssl
 from asyncio     import Future, PriorityQueue
-from queue       import Queue
-from typing      import Awaitable, Callable, Dict, List, Optional, Set, Tuple
-from enum        import Enum
-from dataclasses import dataclass
+from typing      import Awaitable, List, Optional, Set, Tuple
 
 from asyncio_throttle import Throttler
 from ircstates        import Emit
@@ -11,7 +8,7 @@ from irctokens        import build, Line, tokenise
 
 from .ircv3     import Capability, CAPS, CAP_SASL
 from .interface import ConnectionParams, IServer, PriorityLine, SendPriority
-from .matching  import BaseResponse, Response, Numerics, ParamAny, Literal
+from .matching  import BaseResponse
 from .sasl      import SASLContext
 
 sc = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)

@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, List, Optional
+from typing import Iterable, List, Optional
 
 class Capability(object):
     def __init__(self,

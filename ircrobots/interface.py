@@ -1,6 +1,5 @@
-from typing import Awaitable, Optional
+from typing import Awaitable
 from enum import IntEnum
-from dataclasses import dataclass
 
 from ircstates import Server
 from irctokens import Line
