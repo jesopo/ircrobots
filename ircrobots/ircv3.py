@@ -69,8 +69,8 @@ class CAPContext(ServerContext):
         if line.command == "CAP":
             caps = self.server.collect_caps()
             if caps:
-                await self.server.send(build("CAP",
-                    ["REQ", " ".join(caps)]))
+                await self.server.send(
+                    build("CAP", ["REQ", " ".join(caps)]))
 
                 while caps:
                     line = await self.server.wait_for(ResponseOr(
