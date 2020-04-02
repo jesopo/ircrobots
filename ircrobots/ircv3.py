@@ -2,7 +2,8 @@ from typing    import Iterable, List, Optional
 from irctokens import build
 
 from .contexts import  ServerContext
-from .matching import  Response, ResponseOr, ParamAny, ParamNot, ParamLiteral
+from .matching import  (Response, Numerics, ResponseOr, ParamAny, ParamNot,
+    ParamLiteral)
 from .interface import ICapability
 
 class Capability(ICapability):
@@ -57,10 +58,13 @@ CAPS: List[ICapability] = [
 class CAPContext(ServerContext):
     async def handshake(self) -> bool:
         # improve this by being able to wait_for Emit objects
-        line = await self.server.wait_for(Response(
-            "CAP",
-            [ParamAny(), ParamLiteral("LS"), ParamNot(ParamLiteral("*"))],
-            errors=["001"]))
+        line = await self.server.wait_for(ResponseOr(
+            Response(
+                "CAP",
+                [ParamAny(), ParamLiteral("LS"), ParamNot(ParamLiteral("*"))]
+            ),
+            Numerics(["RPL_WELCOME"])
+        ))
 
         if line.command == "CAP":
             caps = self.server.collect_caps()

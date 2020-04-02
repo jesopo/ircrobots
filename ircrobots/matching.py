@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List
 from irctokens import Line
+from .numerics import NUMERIC_NAMES
 
 class ResponseParam(object):
     def match(self, arg: str) -> bool:
@@ -12,7 +13,7 @@ class BaseResponse(object):
 class Numerics(BaseResponse):
     def __init__(self,
             numerics: List[str]):
-        self._numerics = numerics
+        self._numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
 
     def match(self, line: Line):
         return line.command in self._numerics
@@ -20,11 +21,9 @@ class Numerics(BaseResponse):
 class Response(BaseResponse):
     def __init__(self,
             command: str,
-            params:  List[ResponseParam],
-            errors:  Optional[List[str]] = None):
+            params:  List[ResponseParam]):
         self._command = command
         self._params  = params
-        self._errors  = errors or []
 
     def match(self, line: Line) -> bool:
         if line.command == self._command:
@@ -34,8 +33,6 @@ class Response(BaseResponse):
                     return False
             else:
                 return True
-        elif line.command in self._errors:
-            return True
         else:
             return False
 

@@ -3,7 +3,7 @@ from enum        import Enum
 from base64      import b64encode
 from irctokens   import build
 
-from .matching import Response, Numerics, ParamAny
+from .matching import Response, ResponseOr, Numerics, ParamAny
 from .contexts import ServerContext
 from .params   import SASLParams
 
@@ -25,6 +25,10 @@ class SASLError(Exception):
 class SASLUnknownMechanismError(SASLError):
     pass
 
+NUMERICS_INITIAL = Numerics(
+    ["ERR_SASLFAIL", "ERR_SASLALREADY", "RPL_SASLMECHS"])
+NUMERICS_LAST    = Numerics(["RPL_SASLSUCCESS", "ERR_SASLFAIL"])
+
 class SASLContext(ServerContext):
     async def from_params(self, params: SASLParams) -> SASLResult:
         if params.mechanism == "USERPASS":
@@ -38,8 +42,10 @@ class SASLContext(ServerContext):
 
     async def external(self) -> SASLResult:
         await self.server.send(build("AUTHENTICATE", ["EXTERNAL"]))
-        line = await self.server.wait_for(Response("AUTHENTICATE",
-            [ParamAny()], errors=["904", "907", "908"]))
+        line = await self.server.wait_for(ResponseOr(
+            Response("AUTHENTICATE", [ParamAny()]),
+            NUMERICS_INITIAL
+        ))
 
         if line.command == "907":
             # we've done SASL already. cleanly abort
@@ -52,7 +58,7 @@ class SASLContext(ServerContext):
         elif line.command == "AUTHENTICATE" and line.params[0] == "+":
             await self.server.send(build("AUTHENTICATE", ["+"]))
 
-            line = await self.server.wait_for(Numerics(["903", "904"]))
+            line = await self.server.wait_for(NUMERICS_LAST)
             if line.command == "903":
                 return SASLResult.SUCCESS
         return SASLResult.FAILURE
@@ -80,8 +86,10 @@ class SASLContext(ServerContext):
             match     = SASL_USERPASS_MECHANISMS[0]
 
         await self.server.send(build("AUTHENTICATE", [match]))
-        line = await self.server.wait_for(Response("AUTHENTICATE",
-            [ParamAny()], errors=["904", "907", "908"]))
+        line = await self.server.wait_for(ResponseOr(
+            Response("AUTHENTICATE", [ParamAny()]),
+            NUMERICS_INITIAL
+        ))
 
         if line.command == "907":
             # we've done SASL already. cleanly abort
@@ -92,8 +100,8 @@ class SASLContext(ServerContext):
             match     = _common(available)
 
             await self.server.send(build("AUTHENTICATE", [match]))
-            line = await self.server.wait_for(Response("AUTHENTICATE",
-                [ParamAny()]))
+            line = await self.server.wait_for(
+                Response("AUTHENTICATE", [ParamAny()]))
 
         if line.command == "AUTHENTICATE" and line.params[0] == "+":
             auth_text: Optional[str] = None
@@ -101,11 +109,11 @@ class SASLContext(ServerContext):
                 auth_text = f"{username}\0{username}\0{password}"
 
             if not auth_text is None:
-                auth_b64 = b64encode(auth_text.encode("utf8")
-                    ).decode("ascii")
+                auth_b64 = b64encode(
+                    auth_text.encode("utf8")).decode("ascii")
                 await self.server.send(build("AUTHENTICATE", [auth_b64]))
 
-                line = await self.server.wait_for(Numerics(["903", "904"]))
+                line = await self.server.wait_for(NUMERICS_LAST)
                 if line.command == "903":
                     return SASLResult.SUCCESS
         return SASLResult.FAILURE
