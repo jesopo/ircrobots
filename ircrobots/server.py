@@ -46,7 +46,11 @@ class Server(IServer):
     async def connect(self, params: ConnectionParams):
         cur_ssl = sc if params.ssl else None
         reader, writer = await asyncio.open_connection(
-            params.host, params.port, ssl=cur_ssl)
+            params.host,
+            params.port,
+            ssl=cur_ssl,
+            local_addr=(params.bindhost, 0))
+
         self._reader = reader
         self._writer = writer
         self.params = params
