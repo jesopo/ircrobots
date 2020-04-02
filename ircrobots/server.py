@@ -126,12 +126,7 @@ class Server(IServer):
             await self.send(build("CAP", ["REQ", " ".join(matches)]))
     async def _cap_ack(self, emit: Emit):
         if not self.params.sasl is None and self.cap_agreed(CAP_SASL):
-            if self.params.sasl.mechanism == "USERPASS":
-                await SASLContext(self).userpass(
-                    self.params.sasl.username or "",
-                    self.params.sasl.password or "")
-            elif self.params.sasl.mechanism == "EXTERNAL":
-                await SASLContext(self).external()
+            await SASLContext(self).from_params(self.params.sasl)
 
         for cap in (emit.tokens or []):
             if cap in self._requested_caps:

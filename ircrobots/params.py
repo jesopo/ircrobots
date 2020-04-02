@@ -1,11 +1,15 @@
 from typing      import Optional
 from dataclasses import dataclass
 
-@dataclass
 class SASLParams(object):
-    mechanism: str
-    username:  Optional[str] = None
-    password:  Optional[str] = None
+    def __init__(self,
+            mechanism: str,
+            username:  str="",
+            password:  str=""):
+        self.mechanism = mechanism.upper()
+        self.username  = username
+        self.password  = password
+
 class SASLUserPass(SASLParams):
     def __init__(self, username: str, password: str):
         super().__init__("USERPASS", username, password)

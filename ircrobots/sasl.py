@@ -5,6 +5,7 @@ from irctokens   import build
 
 from .matching import Response, Numerics, ParamAny
 from .contexts import ServerContext
+from .params   import SASLParams
 
 SASL_USERPASS_MECHANISMS = [
     "SCRAM-SHA-512",
@@ -20,10 +21,20 @@ class SASLResult(Enum):
 
 class SASLError(Exception):
     pass
-class SASLUnkownMechanismError(SASLError):
+class SASLUnknownMechanismError(SASLError):
     pass
 
 class SASLContext(ServerContext):
+    async def from_params(self, params: SASLParams) -> SASLResult:
+        if params.mechanism == "USERPASS":
+            return await self.userpass(params.username, params.password)
+        elif params.mechanism == "EXTERNAL":
+            return await self.external()
+        else:
+            raise SASLUnknownMechanismError(
+                "SASLParams given with unknown mechanism "
+                f"{params.mechanism!r}")
+
     async def external(self) -> SASLResult:
         await self.server.send(build("AUTHENTICATE", ["EXTERNAL"]))
         line = await self.server.wait_for(Response("AUTHENTICATE",
@@ -34,7 +45,7 @@ class SASLContext(ServerContext):
             return SASLResult.ALREADY
         elif line.command == "908":
             available = line.params[1].split(",")
-            raise SASLUnkownMechanismError(
+            raise SASLUnknownMechanismError(
                 "Server does not support SASL EXTERNAL "
                 f"(it supports {available}")
         elif line.command == "AUTHENTICATE" and line.params[0] == "+":
@@ -53,7 +64,7 @@ class SASLContext(ServerContext):
                 if our_mech in server_mechs:
                     return our_mech
             else:
-                raise SASLUnkownMechanismError(
+                raise SASLUnknownMechanismError(
                     "No matching SASL mechanims. "
                     f"(we have: {SASL_USERPASS_MECHANISMS} "
                     f"server has: {server_mechs})")
