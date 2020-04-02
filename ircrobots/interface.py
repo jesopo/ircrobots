@@ -6,6 +6,7 @@ from ircstates import Server
 from irctokens import Line
 
 from .ircv3 import Capability
+from .sasl  import SASLParams
 
 @dataclass
 class ConnectionParams(object):
@@ -17,6 +18,8 @@ class ConnectionParams(object):
     username: Optional[str] = None
     realname: Optional[str] = None
     bindhost: Optional[str] = None
+
+    sasl: Optional[SASLParams] = None
 
 class SendPriority(IntEnum):
     HIGH   = 0

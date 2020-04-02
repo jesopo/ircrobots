@@ -29,6 +29,7 @@ class Capability(object):
             alias=self.alias,
             depends_on=self.depends_on[:])
 
+CAP_SASL = Capability("sasl")
 CAPS = [
     Capability("multi-prefix"),
     Capability("chghost"),
