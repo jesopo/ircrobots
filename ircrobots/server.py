@@ -68,7 +68,7 @@ class Server(IServer):
             elif emit.subcommand in ["ACK", "NAK"]:
                 await self._cap_ack(emit)
             elif emit.subcommand == "NEW":
-                await self._cap_new()
+                await self._cap_new(emit)
 
     async def _on_read_line(self, line: Line):
         for i, (response, future) in enumerate(self._wait_for):
@@ -137,8 +137,11 @@ class Server(IServer):
         if not self._requested_caps:
             await self.send(build("CAP", ["END"]))
 
-    async def _cap_new(self):
-        await self._maybe_sasl()
+    async def _cap_new(self, emit: Emit):
+        if not emit.tokens is None:
+            tokens = [t.split("=", 1)[0] for t in emit.tokens]
+            if CAP_SASL.available(tokens):
+                await self._maybe_sasl()
 
     async def _maybe_sasl(self) -> bool:
         if (self.sasl_state == SASLResult.NONE and
