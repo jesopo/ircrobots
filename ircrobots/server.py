@@ -76,7 +76,7 @@ class Server(IServer):
             if emit.subcommand == "NEW":
                 await self._cap_new(emit)
         elif emit.command == "JOIN":
-            if emit.self:
+            if emit.self and not emit.channel is None:
                 await self.send(build("MODE", [emit.channel.name]))
 
     async def _on_read_line(self, line: Line):
