@@ -1,8 +1,8 @@
 import asyncio, ssl
-from asyncio     import PriorityQueue
+from asyncio     import Future, PriorityQueue
 from queue       import Queue
-from typing      import Callable, Dict, List, Optional, Set, Tuple
-from enum        import IntEnum
+from typing      import Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from enum        import Enum
 from dataclasses import dataclass
 
 from asyncio_throttle import Throttler
@@ -11,6 +11,7 @@ from irctokens        import build, Line, tokenise
 
 from .ircv3     import Capability, CAPS
 from .interface import ConnectionParams, IServer, PriorityLine, SendPriority
+from .matching  import BaseResponse, Response, Numerics, ParamAny, Literal
 
 sc = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 
@@ -32,6 +33,8 @@ class Server(IServer):
 
         self._cap_queue:      Set[Capability] = set([])
         self._requested_caps: List[str]       = []
+
+        self._wait_for: List[Tuple[BaseResponse, Future]] = []
 
     async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
         await self.send(tokenise(line), priority)
@@ -67,6 +70,12 @@ class Server(IServer):
                 await self._cap_ack(emit)
 
     async def _on_read_line(self, line: Line):
+        for i, (response, future) in enumerate(self._wait_for):
+            if response.match(line):
+                self._wait_for.pop(i)
+                future.set_result(line)
+                break
+
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
@@ -74,6 +83,11 @@ class Server(IServer):
         data = await self._reader.read(1024)
         lines = self.recv(data)
         return lines
+
+    def wait_for(self, response: BaseResponse) -> Awaitable[Line]:
+        future: "Future[Line]" = asyncio.Future()
+        self._wait_for.append((response, future))
+        return future
 
     async def line_written(self, line: Line):
         pass
