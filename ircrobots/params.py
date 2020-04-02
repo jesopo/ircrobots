@@ -13,6 +13,9 @@ class SASLParams(object):
 class SASLUserPass(SASLParams):
     def __init__(self, username: str, password: str):
         super().__init__("USERPASS", username, password)
+class SASLSCRAM(SASLParams):
+    def __init__(self, username: str, password: str):
+        super().__init__("SCRAM", username, password)
 class SASLExternal(SASLParams):
     def __init__(self):
         super().__init__("EXTERNAL")
