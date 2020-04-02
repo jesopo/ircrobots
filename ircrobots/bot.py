@@ -1,6 +1,6 @@
 import asyncio, inspect
 import anyio
-from queue  import Queue
+
 from typing import Any, Awaitable, Callable, cast, Dict, List, Tuple
 from irctokens import Line
 
