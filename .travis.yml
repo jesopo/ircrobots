@@ -1,0 +1,12 @@
+language: python
+cache: pip
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+  - "3.8-dev"
+install:
+  - pip3 install mypy -r requirements.txt
+script:
+  - pip3 freeze
+  - mypy ircrobots examples
