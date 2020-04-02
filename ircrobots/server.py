@@ -6,8 +6,9 @@ from asyncio_throttle import Throttler
 from ircstates        import Emit
 from irctokens        import build, Line, tokenise
 
-from .ircv3     import Capability, CAPS, CAP_SASL
-from .interface import ConnectionParams, IServer, PriorityLine, SendPriority
+from .ircv3     import CAPContext, CAPS, CAP_SASL
+from .interface import (ConnectionParams, ICapability, IServer, PriorityLine,
+    SendPriority)
 from .matching  import BaseResponse
 from .sasl      import SASLContext, SASLResult
 
@@ -29,9 +30,7 @@ class Server(IServer):
         self.sasl_state = SASLResult.NONE
 
         self._write_queue: PriorityQueue[PriorityLine] = PriorityQueue()
-
-        self._cap_queue:      Set[Capability] = set([])
-        self._requested_caps: List[str]       = []
+        self._cap_queue:   Set[ICapability] = set([])
 
         self._wait_for: List[Tuple[BaseResponse, Future]] = []
 
@@ -50,24 +49,22 @@ class Server(IServer):
             params.host, params.port, ssl=cur_ssl)
         self._reader = reader
         self._writer = writer
+        self.params = params
 
-        nickname = params.nickname
-        username = params.username or nickname
-        realname = params.realname or nickname
+    async def handshake(self):
+        nickname = self.params.nickname
+        username = self.params.username or nickname
+        realname = self.params.realname or nickname
 
         await self.send(build("CAP",  ["LS"]))
         await self.send(build("NICK", [nickname]))
         await self.send(build("USER", [username, "0", "*", realname]))
 
-        self.params = params
+        await CAPContext(self).handshake()
 
     async def _on_read_emit(self, line: Line, emit: Emit):
         if emit.command == "CAP":
-            if emit.subcommand == "LS" and emit.finished:
-                await self._cap_ls_done()
-            elif emit.subcommand in ["ACK", "NAK"]:
-                await self._cap_ack(emit)
-            elif emit.subcommand == "NEW":
+            if emit.subcommand == "NEW":
                 await self._cap_new(emit)
 
     async def _on_read_line(self, line: Line):
@@ -107,43 +104,31 @@ class Server(IServer):
         return lines
 
     # CAP-related
-    async def queue_capability(self, cap: Capability):
+    async def queue_capability(self, cap: ICapability):
         self._cap_queue.add(cap)
 
-    def cap_agreed(self, capability: Capability) -> bool:
+    def cap_agreed(self, capability: ICapability) -> bool:
         return bool(self.cap_available(capability))
-    def cap_available(self, capability: Capability) -> Optional[str]:
+    def cap_available(self, capability: ICapability) -> Optional[str]:
         return capability.available(self.agreed_caps)
 
-    async def _cap_ls_done(self):
+    def collect_caps(self) -> List[str]:
         caps = CAPS+list(self._cap_queue)
         self._cap_queue.clear()
 
         if not self.params.sasl is None:
             caps.append(CAP_SASL)
 
-        matches = list(filter(bool,
-            (c.available(self.available_caps) for c in caps)))
-        if matches:
-            self._requested_caps = matches
-            await self.send(build("CAP", ["REQ", " ".join(matches)]))
-
-    async def _cap_ack(self, emit: Emit):
-        await self._maybe_sasl()
-
-        for cap in (emit.tokens or []):
-            if cap in self._requested_caps:
-                self._requested_caps.remove(cap)
-        if not self._requested_caps:
-            await self.send(build("CAP", ["END"]))
+        matched = [c.available(self.available_caps) for c in caps]
+        return [name for name in matched if not name is None]
 
     async def _cap_new(self, emit: Emit):
         if not emit.tokens is None:
             tokens = [t.split("=", 1)[0] for t in emit.tokens]
             if CAP_SASL.available(tokens):
-                await self._maybe_sasl()
+                await self.maybe_sasl()
 
-    async def _maybe_sasl(self) -> bool:
+    async def maybe_sasl(self) -> bool:
         if (self.sasl_state == SASLResult.NONE and
                 not self.params.sasl is None and
                 self.cap_agreed(CAP_SASL)):

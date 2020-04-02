@@ -1,10 +1,9 @@
-from typing import Awaitable
+from typing import Awaitable, Iterable, List, Optional
 from enum import IntEnum
 
 from ircstates import Server
 from irctokens import Line
 
-from .ircv3    import Capability
 from .matching import BaseResponse
 from .params   import ConnectionParams
 
@@ -20,6 +19,16 @@ class PriorityLine(object):
         self.line = line
     def __lt__(self, other: "PriorityLine") -> bool:
         return self.priority < other.priority
+
+class ICapability(object):
+    def available(self, capabilities: Iterable[str]) -> Optional[str]:
+        pass
+
+    def match(self, capability: str) -> Optional[str]:
+        pass
+
+    def copy(self) -> "ICapability":
+        pass
 
 class IServer(Server):
     params:  ConnectionParams
@@ -38,8 +47,19 @@ class IServer(Server):
     async def connect(self, params: ConnectionParams):
         pass
 
-    async def queue_capability(self, cap: Capability):
+    async def queue_capability(self, cap: ICapability):
         pass
 
     async def line_written(self, line: Line):
+        pass
+
+    def cap_agreed(self, capability: ICapability) -> bool:
+        pass
+    def cap_available(self, capability: ICapability) -> Optional[str]:
+        pass
+
+    def collect_caps(self) -> List[str]:
+        pass
+
+    async def maybe_sasl(self) -> bool:
         pass

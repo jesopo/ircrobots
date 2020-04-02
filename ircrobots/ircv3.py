@@ -1,6 +1,11 @@
-from typing import Iterable, List, Optional
+from typing    import Iterable, List, Optional
+from irctokens import build
 
-class Capability(object):
+from .contexts import  ServerContext
+from .matching import  Response, ResponseOr, ParamAny, ParamNot, ParamLiteral
+from .interface import ICapability
+
+class Capability(ICapability):
     def __init__(self,
             ratified_name: Optional[str],
             draft_name:    Optional[str]=None,
@@ -30,7 +35,7 @@ class Capability(object):
             depends_on=self.depends_on[:])
 
 CAP_SASL = Capability("sasl")
-CAPS = [
+CAPS: List[ICapability] = [
     Capability("multi-prefix"),
     Capability("chghost"),
     Capability("away-notify"),
@@ -48,3 +53,37 @@ CAPS = [
     Capability(None, "draft/rename", alias="rename"),
     Capability("setname", "draft/setname")
 ]
+
+class CAPContext(ServerContext):
+    async def handshake(self) -> bool:
+        # improve this by being able to wait_for Emit objects
+        line = await self.server.wait_for(Response(
+            "CAP",
+            [ParamAny(), ParamLiteral("LS"), ParamNot(ParamLiteral("*"))],
+            errors=["001"]))
+
+        if line.command == "CAP":
+            caps = self.server.collect_caps()
+            if caps:
+                await self.server.send(build("CAP",
+                    ["REQ", " ".join(caps)]))
+
+                while caps:
+                    line = await self.server.wait_for(ResponseOr(
+                        Response("CAP", [ParamAny(), ParamLiteral("ACK")]),
+                        Response("CAP", [ParamAny(), ParamLiteral("NAK")])
+                    ))
+
+                    current_caps = line.params[2].split(" ")
+                    for cap in current_caps:
+                        if cap in caps:
+                            caps.remove(cap)
+
+            if self.server.cap_agreed(CAP_SASL):
+                await self.server.maybe_sasl()
+
+            await self.server.send(build("CAP", ["END"]))
+            return True
+        else:
+            return False
+

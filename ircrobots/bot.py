@@ -56,6 +56,7 @@ class Bot(object):
                     print(e)
                 await tg.cancel_scope.cancel()
 
+            await tg.spawn(server.handshake)
             await tg.spawn(_read)
             await tg.spawn(_write)
         del self.servers[server.name]

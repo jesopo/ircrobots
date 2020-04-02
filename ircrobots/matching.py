@@ -39,15 +39,25 @@ class Response(BaseResponse):
         else:
             return False
 
+class ResponseOr(BaseResponse):
+    def __init__(self, *responses: BaseResponse):
+        self._responses = responses
+    def match(self, line: Line) -> bool:
+        for response in self._responses:
+            if response.match(line):
+                return True
+        else:
+            return False
+
 class ParamAny(ResponseParam):
     def match(self, arg: str) -> bool:
         return True
-class Literal(ResponseParam):
+class ParamLiteral(ResponseParam):
     def __init__(self, value: str):
         self._value = value
     def match(self, arg: str) -> bool:
         return self._value == arg
-class Not(ResponseParam):
+class ParamNot(ResponseParam):
     def __init__(self, param: ResponseParam):
         self._param = param
     def match(self, arg: str) -> bool:
