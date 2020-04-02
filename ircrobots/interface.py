@@ -1,25 +1,13 @@
-from typing import Optional
+from typing import Awaitable, Optional
 from enum import IntEnum
 from dataclasses import dataclass
 
 from ircstates import Server
 from irctokens import Line
 
-from .ircv3 import Capability
-from .sasl  import SASLParams
-
-@dataclass
-class ConnectionParams(object):
-    nickname: str
-    host:     str
-    port:     int
-    ssl:      bool
-
-    username: Optional[str] = None
-    realname: Optional[str] = None
-    bindhost: Optional[str] = None
-
-    sasl: Optional[SASLParams] = None
+from .ircv3    import Capability
+from .matching import BaseResponse
+from .params   import ConnectionParams
 
 class SendPriority(IntEnum):
     HIGH   = 0
@@ -40,6 +28,9 @@ class IServer(Server):
     async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
         pass
     async def send(self, line: Line, priority=SendPriority.DEFAULT):
+        pass
+
+    def wait_for(self, response: BaseResponse) -> Awaitable[Line]:
         pass
 
     def set_throttle(self, rate: int, time: float):
