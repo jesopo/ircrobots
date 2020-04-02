@@ -56,7 +56,7 @@ class Server(IServer):
         username = self.params.username or nickname
         realname = self.params.realname or nickname
 
-        await self.send(build("CAP",  ["LS"]))
+        await self.send(build("CAP",  ["LS", "302"]))
         await self.send(build("NICK", [nickname]))
         await self.send(build("USER", [username, "0", "*", realname]))
 
