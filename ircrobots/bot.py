@@ -22,8 +22,6 @@ class Bot(object):
 
     async def line_read(self, server: Server, line: Line):
         pass
-    async def emit_read(self, server: Server, line: Line):
-        pass
 
     async def line_send(self, server: Server, line: Line):
         pass
@@ -44,7 +42,6 @@ class Bot(object):
                     for line, emits in lines:
                         for emit in emits:
                             await tg.spawn(server._on_read_emit, line, emit)
-                            await tg.spawn(self.emit_read, server, emit)
                         await tg.spawn(server._on_read_line, line)
                         await tg.spawn(self.line_read, server, line)
                 await tg.cancel_scope.cancel()
