@@ -1,13 +1,11 @@
 import asyncio
 
 from irctokens import build, Line
-
-from ircrobots.bot    import Bot as BaseBot
-from ircrobots.server import ConnectionParams, Server
+from ircrobots import Bot as BaseBot
+from ircrobots import ConnectionParams, Server
 
 SERVERS = [
-    ("freenode", "chat.freenode.net"),
-    ("tilde",    "ctrl-c.tilde.chat")
+    ("freenode", "chat.freenode.invalid")
 ]
 
 class Bot(BaseBot):
@@ -25,6 +23,8 @@ async def main():
     for name, host in SERVERS:
         params = ConnectionParams("BitBotNewTest", host, 6697, True)
         await bot.add_server(name, params)
+
     await bot.run()
+
 if __name__ == "__main__":
     asyncio.run(main())
