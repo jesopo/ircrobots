@@ -6,7 +6,7 @@ from ircstates import Server
 from irctokens import Line
 
 from .matching import BaseResponse
-from .params   import ConnectionParams
+from .params   import ConnectionParams, SASLParams
 
 class SendPriority(IntEnum):
     HIGH   = 0
@@ -63,5 +63,5 @@ class IServer(Server):
     def collect_caps(self) -> List[str]:
         pass
 
-    async def maybe_sasl(self) -> bool:
+    async def sasl_auth(self, sasl: SASLParams) -> bool:
         pass

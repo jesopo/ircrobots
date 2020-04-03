@@ -83,8 +83,9 @@ class CAPContext(ServerContext):
                         if cap in caps:
                             caps.remove(cap)
 
-            if self.server.cap_agreed(CAP_SASL):
-                await self.server.maybe_sasl()
+            if (self.server.cap_agreed(CAP_SASL) and
+                    not self.server.params.sasl is None):
+                await self.server.sasl_auth(self.server.params.sasl)
 
             await self.server.send(build("CAP", ["END"]))
             return True

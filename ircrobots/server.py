@@ -9,7 +9,7 @@ from irctokens        import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAPS, CAP_SASL
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
-    SendPriority)
+    SendPriority, SASLParams)
 from .matching  import BaseResponse
 from .sasl      import SASLContext, SASLResult
 from .security  import ssl_context
@@ -143,17 +143,16 @@ class Server(IServer):
     async def _cap_new(self, emit: Emit):
         if not emit.tokens is None:
             tokens = [t.split("=", 1)[0] for t in emit.tokens]
-            if CAP_SASL.available(tokens):
-                await self.maybe_sasl()
+            if CAP_SASL.available(tokens) and not self.params.sasl is None:
+                await self.sasl_auth(self.params.sasl)
 
-    async def maybe_sasl(self) -> bool:
+    async def sasl_auth(self, params: SASLParams) -> bool:
         if (self.sasl_state == SASLResult.NONE and
-                not self.params.sasl is None and
                 self.cap_agreed(CAP_SASL)):
-            res = await SASLContext(self).from_params(self.params.sasl)
+
+            res = await SASLContext(self).from_params(params)
             self.sasl_state = res
             return True
         else:
             return False
-
     # /CAP-related
