@@ -35,30 +35,29 @@ class Bot(object):
 
     async def _run_server(self, server: Server):
         async with anyio.create_task_group() as tg:
+            async def _read_query():
+                while not tg.cancel_scope.cancel_called:
+                    await server._read_lines()
+                await tg.cancel_scope.cancel()
+
             async def _read():
                 while not tg.cancel_scope.cancel_called:
-                    lines = await server._read_lines()
-
-                    for line, emits in lines:
-                        for emit in emits:
-                            await tg.spawn(server._on_read_emit, line, emit)
-                        await tg.spawn(server._on_read_line, line)
-                        await tg.spawn(self.line_read, server, line)
+                    line = await server.next_line()
+                    await self.line_read(server, line)
                 await tg.cancel_scope.cancel()
 
             async def _write():
-                try:
-                    while not tg.cancel_scope.cancel_called:
-                        lines = await server._write_lines()
-                        for line in lines:
-                            await self.line_send(server, line)
-                except Exception as e:
-                    print(e)
+                while not tg.cancel_scope.cancel_called:
+                    lines = await server._write_lines()
+                    for line in lines:
+                        await self.line_send(server, line)
                 await tg.cancel_scope.cancel()
 
-            await tg.spawn(server.handshake)
-            await tg.spawn(_read)
             await tg.spawn(_write)
+            await tg.spawn(_read)
+            await server.handshake()
+            await tg.spawn(_read_query)
+
         del self.servers[server.name]
         await self.disconnected(server)
 

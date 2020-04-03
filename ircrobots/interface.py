@@ -52,7 +52,12 @@ class IServer(Server):
     async def queue_capability(self, cap: ICapability):
         pass
 
-    async def line_written(self, line: Line):
+    async def line_read(self, line: Line):
+        pass
+    async def line_send(self, line: Line):
+        pass
+
+    async def next_line(self) -> Line:
         pass
 
     def cap_agreed(self, capability: ICapability) -> bool:

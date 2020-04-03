@@ -1,6 +1,6 @@
 import asyncio
 from ssl         import SSLContext
-from asyncio     import Future, PriorityQueue
+from asyncio     import Future, PriorityQueue, Queue
 from typing      import Awaitable, List, Optional, Set, Tuple
 
 from asyncio_throttle import Throttler
@@ -26,17 +26,19 @@ class Server(IServer):
         super().__init__(name)
 
         self.throttle = Throttler(
-            rate_limit=THROTTLE_RATE, period=THROTTLE_TIME)
+            rate_limit=100, period=THROTTLE_TIME)
+
         self.sasl_state = SASLResult.NONE
 
-        self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
-        self._cap_queue:   Set[ICapability] = set([])
+        self._wait_for_cache: List[Tuple[Line, List[Emit]]] = []
+        self._write_queue:    PriorityQueue[SentLine] = PriorityQueue()
+        self._read_queue:     Queue[Tuple[Line, List[Emit]]] = Queue()
+        self._cap_queue:      Set[ICapability] = set([])
 
-        self._wait_for: List[Tuple[BaseResponse, Future]] = []
-
-    async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
+    async def send_raw(self, line: str, priority=SendPriority.DEFAULT
+            ) -> SentLine:
         await self.send(tokenise(line), priority)
-    async def send(self, line: Line, priority=SendPriority.DEFAULT):
+    async def send(self, line: Line, priority=SendPriority.DEFAULT) -> SentLine:
         prio_line = SentLine(priority, line)
         await self._write_queue.put(prio_line)
         await prio_line.future
@@ -72,7 +74,9 @@ class Server(IServer):
         await CAPContext(self).handshake()
 
     async def _on_read_emit(self, line: Line, emit: Emit):
-        if emit.command   == "CAP":
+        if emit.command   == "001":
+            self.set_throttle(THROTTLE_RATE, THROTTLE_TIME)
+        elif emit.command   == "CAP":
             if emit.subcommand == "NEW":
                 await self._cap_new(emit)
         elif emit.command == "JOIN":
@@ -80,26 +84,41 @@ class Server(IServer):
                 await self.send(build("MODE", [emit.channel.name]))
 
     async def _on_read_line(self, line: Line):
-        for i, (response, future) in enumerate(self._wait_for):
-            if response.match(line):
-                self._wait_for.pop(i)
-                future.set_result(line)
-                break
-
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
+    async def line_read(self, line: Line):
+        pass
     async def _read_lines(self) -> List[Tuple[Line, List[Emit]]]:
         data = await self._reader.read(1024)
         lines = self.recv(data)
+        for line, emits in lines:
+            for emit in emits:
+                await self._on_read_emit(line, emit)
+
+            await self._on_read_line(line)
+            await self.line_read(line)
+
+            await self._read_queue.put((line, emits))
         return lines
+    async def next_line(self) -> Line:
+        line, emits = await self._read_queue.get()
+        return line
 
-    def wait_for(self, response: BaseResponse) -> Awaitable[Line]:
-        future: "Future[Line]" = asyncio.Future()
-        self._wait_for.append((response, future))
-        return future
+    async def wait_for(self, response: BaseResponse) -> Line:
+        while True:
+            lines = self._wait_for_cache.copy()
+            self._wait_for_cache.clear()
 
-    async def line_written(self, line: Line):
+            if not lines:
+                lines += await self._read_lines()
+
+            for i, (line, emits) in enumerate(lines):
+                if response.match(line):
+                    self._wait_for_cache = lines[i+1:]
+                    return line
+
+    async def line_send(self, line: Line):
         pass
     async def _write_lines(self) -> List[Line]:
         lines: List[SentLine] = []
