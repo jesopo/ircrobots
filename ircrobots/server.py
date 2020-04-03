@@ -47,8 +47,8 @@ class Server(IServer):
 
     async def connect(self, params: ConnectionParams):
         cur_ssl: Optional[SSLContext] = None
-        if params.ssl:
-            cur_ssl = ssl_context(params.ssl_verify)
+        if params.tls:
+            cur_ssl = ssl_context(params.tls_verify)
 
         reader, writer = await asyncio.open_connection(
             params.host,

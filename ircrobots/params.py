@@ -25,11 +25,11 @@ class ConnectionParams(object):
     nickname: str
     host:     str
     port:     int
-    ssl:      bool
+    tls:      bool
 
     username: Optional[str] = None
     realname: Optional[str] = None
     bindhost: Optional[str] = None
 
-    ssl_verify: bool = True
+    tls_verify: bool = True
     sasl:       Optional[SASLParams] = None
