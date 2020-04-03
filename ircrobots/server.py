@@ -35,10 +35,9 @@ class Server(IServer):
         self._read_queue:     Queue[Tuple[Line, List[Emit]]] = Queue()
         self._cap_queue:      Set[ICapability] = set([])
 
-    async def send_raw(self, line: str, priority=SendPriority.DEFAULT
-            ) -> SentLine:
+    async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
         await self.send(tokenise(line), priority)
-    async def send(self, line: Line, priority=SendPriority.DEFAULT) -> SentLine:
+    async def send(self, line: Line, priority=SendPriority.DEFAULT):
         prio_line = SentLine(priority, line)
         await self._write_queue.put(prio_line)
         await prio_line.future
