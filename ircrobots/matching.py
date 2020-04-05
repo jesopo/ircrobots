@@ -3,16 +3,6 @@ from irctokens  import Line
 from .numerics  import NUMERIC_NAMES
 from .interface import IServer, IMatchResponse, IMatchResponseParam
 
-class Numerics(IMatchResponse):
-    def __init__(self,
-            numerics: List[str]):
-        self._numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
-    def __repr__(self) -> str:
-        return f"Numerics({self._numerics!r})"
-
-    def match(self, server: IServer, line: Line):
-        return line.command in self._numerics
-
 class Response(IMatchResponse):
     def __init__(self,
             command: str,
@@ -32,6 +22,22 @@ class Response(IMatchResponse):
                 return True
         else:
             return False
+
+class Numeric(Response):
+    def __init__(self,
+            name:    str,
+            params:  List[IMatchResponseParam]=[]):
+        super().__init__(NUMERIC_NAMES.get(name, name), params)
+
+class Numerics(IMatchResponse):
+    def __init__(self,
+            numerics: List[str]):
+        self._numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
+    def __repr__(self) -> str:
+        return f"Numerics({self._numerics!r})"
+
+    def match(self, server: IServer, line: Line):
+        return line.command in self._numerics
 
 class ResponseOr(IMatchResponse):
     def __init__(self, *responses: IMatchResponse):
