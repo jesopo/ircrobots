@@ -2,14 +2,18 @@ import asyncio
 
 from irctokens import build, Line
 from ircrobots import Bot as BaseBot
-from ircrobots import ConnectionParams, SASLUserPass, Server
+from ircrobots import Server as BaseServer
+from ircrobots import ConnectionParams, SASLUserPass, Server, SASLSCRAM
+
+class Server(BaseServer):
+    async def line_read(self, line: Line):
+        print(f"{self.name} < {line.format()}")
+    async def line_send(self, line: Line):
+        print(f"{self.name} > {line.format()}")
 
 class Bot(BaseBot):
-    async def line_read(self, server: Server, line: Line):
-        print(f"{server.name} < {line.format()}")
-
-    async def line_send(self, server: Server, line: Line):
-        print(f"{server.name} > {line.format()}")
+    def create_server(self, name: str):
+        return Server(name)
 
 async def main():
     bot = Bot()
