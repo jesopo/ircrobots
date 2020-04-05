@@ -103,7 +103,7 @@ class SASLContext(ServerContext):
                     f"(we want: {mechanisms} "
                     f"server has: {server_mechs})")
 
-        if not self.server.available_caps["sasl"] is None:
+        if self.server.available_caps["sasl"]:
             # CAP v3.2 tells us what mechs it supports
             available = self.server.available_caps["sasl"].split(",")
             match     = _common(available)
