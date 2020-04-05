@@ -1,7 +1,7 @@
 import asyncio
 from ssl         import SSLContext
 from asyncio     import Future, PriorityQueue, Queue
-from typing      import List, Optional, Set, Tuple
+from typing      import Dict, List, Optional, Set, Tuple
 
 from asyncio_throttle import Throttler
 from ircstates        import Emit
@@ -59,7 +59,9 @@ class Server(IServer):
 
         self._reader = reader
         self._writer = writer
+
         self.params = params
+        await self.handshake()
 
     async def handshake(self):
         nickname = self.params.nickname
@@ -70,14 +72,20 @@ class Server(IServer):
         await self.send(build("NICK", [nickname]))
         await self.send(build("USER", [username, "0", "*", realname]))
 
-        await CAPContext(self).handshake()
-
     async def _on_read_emit(self, line: Line, emit: Emit):
-        if emit.command   == "001":
+        if emit.command == "001":
             self.set_throttle(THROTTLE_RATE, THROTTLE_TIME)
-        elif emit.command   == "CAP":
-            if emit.subcommand == "NEW":
-                await self._cap_new(emit)
+
+        elif emit.command == "CAP":
+            if emit.subcommand    == "NEW":
+                await self._cap_ls(emit)
+            elif (emit.subcommand == "LS" and
+                    emit.finished):
+                if not self.registered:
+                    await CAPContext(self).handshake()
+                else:
+                    await self._cap_ls(emit)
+
         elif emit.command == "JOIN":
             if emit.self and not emit.channel is None:
                 await self.send(build("MODE", [emit.channel.name]))
@@ -145,11 +153,13 @@ class Server(IServer):
     def cap_available(self, capability: ICapability) -> Optional[str]:
         return capability.available(self.agreed_caps)
 
-    async def _cap_new(self, emit: Emit):
+    async def _cap_ls(self, emit: Emit):
         if not emit.tokens is None:
-            tokens = [t.split("=", 1)[0] for t in emit.tokens]
-            if CAP_SASL.available(tokens) and not self.params.sasl is None:
-                await self.sasl_auth(self.params.sasl)
+            tokens: Dict[str, str] = {}
+            for token in emit.tokens:
+                key, _, value = token.partition("=")
+                tokens[key] = value
+            await CAPContext(self).on_ls(tokens)
 
     async def sasl_auth(self, params: SASLParams) -> bool:
         if (self.sasl_state == SASLResult.NONE and

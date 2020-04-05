@@ -83,20 +83,6 @@ class CAPContext(ServerContext):
                 not self.server.params.sasl is None):
             await self.server.sasl_auth(self.server.params.sasl)
 
-    async def handshake(self) -> bool:
-        # improve this by being able to wait_for Emit objects
-        line = await self.server.wait_for(ResponseOr(
-            Response(
-                "CAP",
-                [ParamAny(), ParamLiteral("LS"), ParamNot(ParamLiteral("*"))]
-            ),
-            Numerics(["RPL_WELCOME"])
-        ))
-
-        if line.command == "CAP":
-            await self.on_ls(self.server.available_caps)
-            await self.server.send(build("CAP", ["END"]))
-            return True
-        else:
-            return False
-
+    async def handshake(self):
+        await self.on_ls(self.server.available_caps)
+        await self.server.send(build("CAP", ["END"]))

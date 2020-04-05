@@ -55,7 +55,6 @@ class Bot(object):
 
             await tg.spawn(_write)
             await tg.spawn(_read)
-            await server.handshake()
             await tg.spawn(_read_query)
 
         del self.servers[server.name]
