@@ -1,5 +1,5 @@
 from asyncio import Future
-from typing  import Awaitable, Iterable, List, Optional
+from typing  import Awaitable, Iterable, Set, Optional
 from enum    import IntEnum
 
 from ircstates import Server
@@ -33,7 +33,8 @@ class ICapability(object):
         pass
 
 class IServer(Server):
-    params:  ConnectionParams
+    params:       ConnectionParams
+    desired_caps: Set[ICapability]
 
     async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
         pass
@@ -49,9 +50,6 @@ class IServer(Server):
     async def connect(self, params: ConnectionParams):
         pass
 
-    async def queue_capability(self, cap: ICapability):
-        pass
-
     async def line_read(self, line: Line):
         pass
     async def line_send(self, line: Line):
@@ -63,9 +61,6 @@ class IServer(Server):
     def cap_agreed(self, capability: ICapability) -> bool:
         pass
     def cap_available(self, capability: ICapability) -> Optional[str]:
-        pass
-
-    def collect_caps(self) -> List[str]:
         pass
 
     async def sasl_auth(self, sasl: SASLParams) -> bool:

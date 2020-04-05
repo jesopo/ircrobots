@@ -1,4 +1,4 @@
-from typing      import List, Optional
+from typing      import List
 from enum        import Enum
 from base64      import b64decode, b64encode
 from irctokens   import build

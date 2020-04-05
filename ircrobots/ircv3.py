@@ -1,4 +1,4 @@
-from typing    import Iterable, List, Optional
+from typing    import Dict, Iterable, List, Optional
 from irctokens import build
 
 from .contexts import  ServerContext
@@ -56,6 +56,33 @@ CAPS: List[ICapability] = [
 ]
 
 class CAPContext(ServerContext):
+    async def on_ls(self, tokens: Dict[str, str]):
+        caps = list(self.server.desired_caps)+CAPS
+
+        if (not self.server.params.sasl is None and
+                not CAP_SASL in caps):
+            caps.append(CAP_SASL)
+
+        matched   = (c.available(tokens) for c in caps)
+        cap_names = [name for name in matched if not name is None]
+
+        if cap_names:
+            await self.server.send(build("CAP", ["REQ", " ".join(cap_names)]))
+
+            while cap_names:
+                line = await self.server.wait_for(ResponseOr(
+                    Response("CAP", [ParamAny(), ParamLiteral("ACK")]),
+                    Response("CAP", [ParamAny(), ParamLiteral("NAK")])
+                ))
+
+                current_caps = line.params[2].split(" ")
+                for cap in current_caps:
+                    if cap in cap_names:
+                        cap_names.remove(cap)
+        if (self.server.cap_agreed(CAP_SASL) and
+                not self.server.params.sasl is None):
+            await self.server.sasl_auth(self.server.params.sasl)
+
     async def handshake(self) -> bool:
         # improve this by being able to wait_for Emit objects
         line = await self.server.wait_for(ResponseOr(
@@ -67,26 +94,7 @@ class CAPContext(ServerContext):
         ))
 
         if line.command == "CAP":
-            caps = self.server.collect_caps()
-            if caps:
-                await self.server.send(
-                    build("CAP", ["REQ", " ".join(caps)]))
-
-                while caps:
-                    line = await self.server.wait_for(ResponseOr(
-                        Response("CAP", [ParamAny(), ParamLiteral("ACK")]),
-                        Response("CAP", [ParamAny(), ParamLiteral("NAK")])
-                    ))
-
-                    current_caps = line.params[2].split(" ")
-                    for cap in current_caps:
-                        if cap in caps:
-                            caps.remove(cap)
-
-            if (self.server.cap_agreed(CAP_SASL) and
-                    not self.server.params.sasl is None):
-                await self.server.sasl_auth(self.server.params.sasl)
-
+            await self.on_ls(self.server.available_caps)
             await self.server.send(build("CAP", ["END"]))
             return True
         else:

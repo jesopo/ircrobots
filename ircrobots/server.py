@@ -1,13 +1,13 @@
 import asyncio
 from ssl         import SSLContext
 from asyncio     import Future, PriorityQueue, Queue
-from typing      import Awaitable, List, Optional, Set, Tuple
+from typing      import List, Optional, Set, Tuple
 
 from asyncio_throttle import Throttler
 from ircstates        import Emit
 from irctokens        import build, Line, tokenise
 
-from .ircv3     import CAPContext, CAPS, CAP_SASL
+from .ircv3     import CAPContext, CAP_SASL
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
     SendPriority, SASLParams)
 from .matching  import BaseResponse
@@ -33,7 +33,7 @@ class Server(IServer):
         self._wait_for_cache: List[Tuple[Line, List[Emit]]] = []
         self._write_queue:    PriorityQueue[SentLine] = PriorityQueue()
         self._read_queue:     Queue[Tuple[Line, List[Emit]]] = Queue()
-        self._cap_queue:      Set[ICapability] = set([])
+        self.desired_caps:    Set[ICapability] = set([])
 
     async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
         await self.send(tokenise(line), priority)
@@ -140,23 +140,10 @@ class Server(IServer):
         return [l.line for l in lines]
 
     # CAP-related
-    async def queue_capability(self, cap: ICapability):
-        self._cap_queue.add(cap)
-
     def cap_agreed(self, capability: ICapability) -> bool:
         return bool(self.cap_available(capability))
     def cap_available(self, capability: ICapability) -> Optional[str]:
         return capability.available(self.agreed_caps)
-
-    def collect_caps(self) -> List[str]:
-        caps = CAPS+list(self._cap_queue)
-        self._cap_queue.clear()
-
-        if not self.params.sasl is None:
-            caps.append(CAP_SASL)
-
-        matched = [c.available(self.available_caps) for c in caps]
-        return [name for name in matched if not name is None]
 
     async def _cap_new(self, emit: Emit):
         if not emit.tokens is None:
