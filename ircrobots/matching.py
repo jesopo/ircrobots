@@ -65,7 +65,7 @@ class ParamLiteral(IMatchResponseParam):
     def match(self, server: IServer, arg: str) -> bool:
         return self._value == arg
 
-class FoldString(IMatchResponseParam):
+class ParamFolded(IMatchResponseParam):
     def __init__(self, value: str):
         self._value = value
         self._folded: Optional[str] = None
