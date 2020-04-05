@@ -71,6 +71,7 @@ class Server(IServer):
         username = self.params.username or nickname
         realname = self.params.realname or nickname
 
+        # these must remain non-awaited; reading hasn't started yet
         self.send(build("CAP",  ["LS", "302"]))
         self.send(build("NICK", [nickname]))
         self.send(build("USER", [username, "0", "*", realname]))
