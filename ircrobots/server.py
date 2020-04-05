@@ -34,12 +34,13 @@ class Server(IServer):
         self._read_queue:     Queue[Tuple[Line, List[Emit]]] = Queue()
         self.desired_caps:    Set[ICapability] = set([])
 
-    async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
-        await self.send(tokenise(line), priority)
-    async def send(self, line: Line, priority=SendPriority.DEFAULT):
+    async def send_raw(self, line: str, priority=SendPriority.DEFAULT
+            ) -> Future:
+        return await self.send(tokenise(line), priority)
+    async def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
         prio_line = SentLine(priority, line)
         await self._write_queue.put(prio_line)
-        await prio_line.future
+        prio_line.future
 
     def set_throttle(self, rate: int, time: float):
         self.throttle.rate_limit = rate
