@@ -9,8 +9,7 @@ from irctokens        import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_SASL
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
-    SendPriority, SASLParams)
-from .matching  import BaseResponse
+    SendPriority, SASLParams, IMatchResponse)
 from .sasl      import SASLContext, SASLResult
 from .security  import ssl_context
 
@@ -104,7 +103,7 @@ class Server(IServer):
         line, emits = await self._read_queue.get()
         return line
 
-    async def wait_for(self, response: BaseResponse) -> Line:
+    async def wait_for(self, response: IMatchResponse) -> Line:
         while True:
             lines = self._wait_for_cache.copy()
             self._wait_for_cache.clear()
@@ -113,7 +112,7 @@ class Server(IServer):
                 lines += await self._read_lines()
 
             for i, (line, emits) in enumerate(lines):
-                if response.match(line):
+                if response.match(self, line):
                     self._wait_for_cache = lines[i+1:]
                     return line
 

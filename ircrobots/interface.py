@@ -5,7 +5,6 @@ from enum    import IntEnum
 from ircstates import Server
 from irctokens import Line
 
-from .matching import BaseResponse
 from .params   import ConnectionParams, SASLParams
 
 class SendPriority(IntEnum):
@@ -32,6 +31,13 @@ class ICapability(object):
     def copy(self) -> "ICapability":
         pass
 
+class IMatchResponse(object):
+    def match(self, server: "IServer", line: Line) -> bool:
+        pass
+class IMatchResponseParam(object):
+    def match(self, server: "IServer", arg: str) -> bool:
+        pass
+
 class IServer(Server):
     params:       ConnectionParams
     desired_caps: Set[ICapability]
@@ -41,7 +47,7 @@ class IServer(Server):
     async def send(self, line: Line, priority=SendPriority.DEFAULT):
         pass
 
-    def wait_for(self, response: BaseResponse) -> Awaitable[Line]:
+    def wait_for(self, response: IMatchResponse) -> Awaitable[Line]:
         pass
 
     def set_throttle(self, rate: int, time: float):
