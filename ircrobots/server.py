@@ -1,7 +1,8 @@
 import asyncio
 from ssl         import SSLContext
 from asyncio     import Future, PriorityQueue, Queue
-from typing      import Dict, List, Optional, Set, Tuple
+from typing      import Deque, Dict, List, Optional, Set, Tuple
+from collections import deque
 
 from asyncio_throttle import Throttler
 from ircstates        import Emit
@@ -29,10 +30,12 @@ class Server(IServer):
 
         self.sasl_state = SASLResult.NONE
 
+
         self._wait_for_cache: List[Tuple[Line, List[Emit]]] = []
         self._write_queue:    PriorityQueue[SentLine] = PriorityQueue()
-        self._read_queue:     Queue[Tuple[Line, List[Emit]]] = Queue()
         self.desired_caps:    Set[ICapability] = set([])
+
+        self._read_queue:     Deque[Tuple[Line, List[Emit]]] = deque()
 
     async def send_raw(self, line: str, priority=SendPriority.DEFAULT
             ) -> Future:
@@ -96,34 +99,34 @@ class Server(IServer):
 
     async def line_read(self, line: Line):
         pass
-    async def _read_lines(self) -> List[Tuple[Line, List[Emit]]]:
-        data = await self._reader.read(1024)
-        lines = self.recv(data)
-        for line, emits in lines:
-            for emit in emits:
-                await self._on_read_emit(line, emit)
 
-            await self._on_read_line(line)
-            await self.line_read(line)
+    async def next_line(self, wait_for: bool = False
+            ) -> Tuple[Line, List[Emit]]:
+        if self._read_queue:
+            both = self._read_queue.popleft()
+        else:
+            data  = await self._reader.read(1024)
+            lines = self.recv(data)
 
-            await self._read_queue.put((line, emits))
-        return lines
-    async def next_line(self) -> Line:
-        line, emits = await self._read_queue.get()
-        return line
+            self._read_queue.extend(lines[1:])
+            both = lines[0]
+
+        line, emits = both
+        for emit in emits:
+            await self._on_read_emit(line, emit)
+        await self._on_read_line(line)
+        await self.line_read(line)
+
+        return both
+
 
     async def wait_for(self, response: IMatchResponse) -> Line:
         while True:
-            lines = self._wait_for_cache.copy()
-            self._wait_for_cache.clear()
+            both = await self.next_line(wait_for=True)
+            line, emits = both
 
-            if not lines:
-                lines += await self._read_lines()
-
-            for i, (line, emits) in enumerate(lines):
-                if response.match(self, line):
-                    self._wait_for_cache = lines[i+1:]
-                    return line
+            if response.match(self, line):
+                return line
 
     async def line_send(self, line: Line):
         pass
@@ -144,6 +147,7 @@ class Server(IServer):
 
         for line in lines:
             line.future.set_result(None)
+            await self.line_send(line.line)
 
         return [l.line for l in lines]
 

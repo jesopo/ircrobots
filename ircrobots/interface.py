@@ -1,8 +1,8 @@
 from asyncio import Future
-from typing  import Awaitable, Iterable, Set, Optional
+from typing  import Awaitable, Iterable, List, Optional, Set, Tuple
 from enum    import IntEnum
 
-from ircstates import Server
+from ircstates import Server, Emit
 from irctokens import Line
 
 from .params   import ConnectionParams, SASLParams
@@ -61,7 +61,7 @@ class IServer(Server):
     async def line_send(self, line: Line):
         pass
 
-    async def next_line(self) -> Line:
+    async def next_line(self) -> Tuple[Line, List[Emit]]:
         pass
 
     def cap_agreed(self, capability: ICapability) -> bool:

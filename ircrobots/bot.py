@@ -20,12 +20,6 @@ class Bot(object):
         await asyncio.sleep(RECONNECT_DELAY)
         await self.add_server(server.name, server.params)
 
-    async def line_read(self, server: Server, line: Line):
-        pass
-
-    async def line_send(self, server: Server, line: Line):
-        pass
-
     async def add_server(self, name: str, params: ConnectionParams) -> Server:
         server = self.create_server(name)
         self.servers[name] = server
@@ -35,27 +29,18 @@ class Bot(object):
 
     async def _run_server(self, server: Server):
         async with anyio.create_task_group() as tg:
-            async def _read_query():
-                while not tg.cancel_scope.cancel_called:
-                    await server._read_lines()
-                await tg.cancel_scope.cancel()
-
             async def _read():
                 while not tg.cancel_scope.cancel_called:
-                    line = await server.next_line()
-                    await self.line_read(server, line)
+                    line, emits = await server.next_line()
                 await tg.cancel_scope.cancel()
 
             async def _write():
                 while not tg.cancel_scope.cancel_called:
                     lines = await server._write_lines()
-                    for line in lines:
-                        await self.line_send(server, line)
                 await tg.cancel_scope.cancel()
 
             await tg.spawn(_write)
             await tg.spawn(_read)
-            await tg.spawn(_read_query)
 
         del self.servers[server.name]
         await self.disconnected(server)
