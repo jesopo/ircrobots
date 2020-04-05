@@ -37,12 +37,12 @@ class Server(IServer):
 
         self._read_queue:     Deque[Tuple[Line, List[Emit]]] = deque()
 
-    async def send_raw(self, line: str, priority=SendPriority.DEFAULT
+    def send_raw(self, line: str, priority=SendPriority.DEFAULT
             ) -> Future:
-        return await self.send(tokenise(line), priority)
-    async def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
+        return self.send(tokenise(line), priority)
+    def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
         prio_line = SentLine(priority, line)
-        await self._write_queue.put(prio_line)
+        self._write_queue.put_nowait(prio_line)
         return prio_line.future
 
     def set_throttle(self, rate: int, time: float):
@@ -71,9 +71,9 @@ class Server(IServer):
         username = self.params.username or nickname
         realname = self.params.realname or nickname
 
-        await self.send(build("CAP",  ["LS", "302"]))
-        await self.send(build("NICK", [nickname]))
-        await self.send(build("USER", [username, "0", "*", realname]))
+        self.send(build("CAP",  ["LS", "302"]))
+        self.send(build("NICK", [nickname]))
+        self.send(build("USER", [username, "0", "*", realname]))
 
     async def _on_read_emit(self, line: Line, emit: Emit):
         if emit.command == "001":

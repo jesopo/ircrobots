@@ -42,9 +42,9 @@ class IServer(Server):
     params:       ConnectionParams
     desired_caps: Set[ICapability]
 
-    async def send_raw(self, line: str, priority=SendPriority.DEFAULT):
+    def send_raw(self, line: str, priority=SendPriority.DEFAULT) -> Future:
         pass
-    async def send(self, line: Line, priority=SendPriority.DEFAULT):
+    def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
         pass
 
     def wait_for(self, response: IMatchResponse) -> Awaitable[Line]:
