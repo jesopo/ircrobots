@@ -100,8 +100,7 @@ class Server(IServer):
     async def line_read(self, line: Line):
         pass
 
-    async def next_line(self, wait_for: bool = False
-            ) -> Tuple[Line, List[Emit]]:
+    async def next_line(self) -> Tuple[Line, List[Emit]]:
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
@@ -119,10 +118,9 @@ class Server(IServer):
 
         return both
 
-
     async def wait_for(self, response: IMatchResponse) -> Line:
         while True:
-            both = await self.next_line(wait_for=True)
+            both = await self.next_line()
             line, emits = both
 
             if response.match(self, line):
