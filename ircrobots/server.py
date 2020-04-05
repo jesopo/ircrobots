@@ -40,7 +40,7 @@ class Server(IServer):
     async def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
         prio_line = SentLine(priority, line)
         await self._write_queue.put(prio_line)
-        prio_line.future
+        return prio_line.future
 
     def set_throttle(self, rate: int, time: float):
         self.throttle.rate_limit = rate
