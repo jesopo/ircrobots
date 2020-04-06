@@ -3,7 +3,7 @@ import asyncio
 from irctokens import build, Line
 from ircrobots import Bot as BaseBot
 from ircrobots import Server as BaseServer
-from ircrobots import ConnectionParams, SASLUserPass, Server, SASLSCRAM
+from ircrobots import ConnectionParams, SASLUserPass, SASLSCRAM
 
 class Server(BaseServer):
     async def line_read(self, line: Line):
