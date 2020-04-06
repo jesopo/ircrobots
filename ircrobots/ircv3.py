@@ -1,9 +1,8 @@
 from typing    import Dict, Iterable, List, Optional
 from irctokens import build
 
-from .contexts import  ServerContext
-from .matching import  (Response, Numerics, ResponseOr, ParamAny, ParamNot,
-    ParamLiteral)
+from .contexts  import ServerContext
+from .matching  import Response, ResponseOr, ParamAny, ParamLiteral
 from .interface import ICapability
 
 class Capability(ICapability):

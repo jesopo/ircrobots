@@ -1,25 +1,26 @@
-import asyncio
-from ssl         import SSLContext
-from asyncio     import Future, PriorityQueue, Queue
-from typing      import Deque, Dict, List, Optional, Set, Tuple
+from asyncio     import Future, PriorityQueue
+from typing      import Awaitable, Deque, Dict, List, Optional, Set, Tuple
 from collections import deque
 
 from asyncio_throttle import Throttler
-from ircstates        import Emit
+from ircstates        import Emit, Channel
 from irctokens        import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_SASL
+from .sasl      import SASLContext, SASLResult
+from .matching  import Numeric, ParamAny, ParamFolded
+from .asyncs    import MaybeAwait
+
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
     SendPriority, SASLParams, IMatchResponse)
-from .sasl      import SASLContext, SASLResult
-from .security  import ssl_context
+from .interface import ITCPTransport, ITCPReader, ITCPWriter
 
 THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
 
 class Server(IServer):
-    _reader: asyncio.StreamReader
-    _writer: asyncio.StreamWriter
+    _reader: ITCPReader
+    _writer: ITCPWriter
     params:  ConnectionParams
 
     def __init__(self, name: str):
@@ -49,16 +50,15 @@ class Server(IServer):
         self.throttle.rate_limit = rate
         self.throttle.period     = time
 
-    async def connect(self, params: ConnectionParams):
-        cur_ssl: Optional[SSLContext] = None
-        if params.tls:
-            cur_ssl = ssl_context(params.tls_verify)
-
-        reader, writer = await asyncio.open_connection(
+    async def connect(self,
+            transport: ITCPTransport,
+            params: ConnectionParams):
+        reader, writer = await transport.connect(
             params.host,
             params.port,
-            ssl=cur_ssl,
-            local_addr=(params.bindhost, 0))
+            tls       =params.tls,
+            tls_verify=params.tls_verify,
+            bindhost  =params.bindhost)
 
         self._reader = reader
         self._writer = writer

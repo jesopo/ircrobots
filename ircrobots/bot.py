@@ -2,9 +2,9 @@ import asyncio
 import anyio
 
 from typing import Dict
-from irctokens import Line
 
-from .server import ConnectionParams, Server
+from .server    import ConnectionParams, Server
+from .transport import TCPTransport
 
 RECONNECT_DELAY = 10.0 # ten seconds reconnect
 
@@ -23,7 +23,7 @@ class Bot(object):
     async def add_server(self, name: str, params: ConnectionParams) -> Server:
         server = self.create_server(name)
         self.servers[name] = server
-        await server.connect(params)
+        await server.connect(TCPTransport() ,params)
         await self._server_queue.put(server)
         return server
 

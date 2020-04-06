@@ -7,6 +7,25 @@ from irctokens import Line
 
 from .params   import ConnectionParams, SASLParams
 
+class ITCPReader(object):
+    async def read(self, byte_count: int):
+        pass
+class ITCPWriter(object):
+    def write(self, data: bytes):
+        pass
+    async def drain(self):
+        pass
+
+class ITCPTransport(object):
+    async def connect(self,
+            hostname:   str,
+            port:       int,
+            tls:        bool,
+            tls_verify: bool=True,
+            bindhost:   Optional[str]=None
+            ) -> Tuple[ITCPReader, ITCPWriter]:
+        pass
+
 class SendPriority(IntEnum):
     HIGH   = 0
     MEDIUM = 10
@@ -53,7 +72,9 @@ class IServer(Server):
     def set_throttle(self, rate: int, time: float):
         pass
 
-    async def connect(self, params: ConnectionParams):
+    async def connect(self,
+            transport: ITCPTransport,
+            params:    ConnectionParams):
         pass
 
     async def line_read(self, line: Line):
