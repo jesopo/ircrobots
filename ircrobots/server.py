@@ -3,13 +3,14 @@ from typing      import Awaitable, Deque, Dict, List, Optional, Set, Tuple
 from collections import deque
 
 from asyncio_throttle import Throttler
-from ircstates        import Emit, Channel
+from ircstates        import Emit, Channel, NUMERIC_NAMES
 from irctokens        import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_SASL
 from .sasl      import SASLContext, SASLResult
-from .matching  import Numeric, ParamAny, ParamFolded
+from .matching  import ResponseOr, Numerics, Numeric, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
+from .struct    import Whois
 
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
     SendPriority, SASLParams, IMatchResponse)

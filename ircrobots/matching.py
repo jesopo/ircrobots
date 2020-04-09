@@ -1,27 +1,38 @@
 from typing     import List, Optional
 from irctokens  import Line
-from .numerics  import NUMERIC_NAMES
+from ircstates  import NUMERIC_NAMES
 from .interface import IServer, IMatchResponse, IMatchResponseParam
 
-class Response(IMatchResponse):
+class Responses(IMatchResponse):
     def __init__(self,
-            command: str,
-            params:  List[IMatchResponseParam]):
-        self._command = command
-        self._params  = params
+            commands: List[str],
+            params:   List[IMatchResponseParam]=[]):
+        self._commands = commands
+        self._params   = params
     def __repr__(self) -> str:
-        return f"Response({self._command}: {self._params!r})"
+        return f"Responses({self._commands!r}: {self._params!r})"
 
     def match(self, server: IServer, line: Line) -> bool:
-        if line.command == self._command:
-            for i, param in enumerate(self._params):
-                if (i >= len(line.params) or
-                        not param.match(server, line.params[i])):
-                    return False
-            else:
-                return True
+        for command in self._commands:
+            if line.command == command:
+                for i, param in enumerate(self._params):
+                    if (i >= len(line.params) or
+                            not param.match(server, line.params[i])):
+                        continue
+                else:
+                    return True
         else:
             return False
+
+class Response(Responses):
+    def __init__(self,
+            command: str,
+            params:  List[IMatchResponseParam]=[]):
+        super().__init__([command], params)
+
+    def __repr__(self) -> str:
+        return f"Response({self._commands[0]}: {self._params!r})"
+
 
 class Numeric(Response):
     def __init__(self,
@@ -29,15 +40,16 @@ class Numeric(Response):
             params:  List[IMatchResponseParam]=[]):
         super().__init__(NUMERIC_NAMES.get(name, name), params)
 
-class Numerics(IMatchResponse):
+class Numerics(Responses):
     def __init__(self,
-            numerics: List[str]):
-        self._numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
-    def __repr__(self) -> str:
-        return f"Numerics({self._numerics!r})"
+            numerics: List[str],
+            params:   List[IMatchResponseParam]=[]):
+        self._numerics = numerics
+        numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
+        super().__init__(numerics, params)
 
-    def match(self, server: IServer, line: Line):
-        return line.command in self._numerics
+    def __repr__(self) -> str:
+        return f"Numerics({self._numerics!r}: {self._params!r})"
 
 class ResponseOr(IMatchResponse):
     def __init__(self, *responses: IMatchResponse):
