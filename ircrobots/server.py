@@ -79,6 +79,7 @@ class Server(IServer):
 
     async def _on_read_emit(self, line: Line, emit: Emit):
         if emit.command == "001":
+            await self.send(build("WHO", [self.nickname]))
             self.set_throttle(THROTTLE_RATE, THROTTLE_TIME)
 
         elif emit.command == "CAP":
