@@ -10,7 +10,6 @@ from .ircv3     import CAPContext, CAP_SASL
 from .sasl      import SASLContext, SASLResult
 from .matching  import ResponseOr, Numerics, Numeric, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
-from .struct    import Whois
 
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
     SendPriority, SASLParams, IMatchResponse)
