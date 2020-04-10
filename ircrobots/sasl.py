@@ -134,7 +134,7 @@ class SASLContext(ServerContext):
                     auth_text = f"{username}\0{username}\0{password}"
                 elif match[0].startswith("SCRAM-SHA-"):
                     auth_text = await self._scram(
-                        match.pop(0), username, password)
+                        match[0], username, password)
 
                 if not auth_text == "+":
                     auth_text = _b64e(auth_text)
@@ -143,8 +143,10 @@ class SASLContext(ServerContext):
                     await self.server.send(build("AUTHENTICATE", [auth_text]))
 
                 line = await self.server.wait_for(NUMERICS_LAST)
-                if line.command == "903":
+                if line.command   == "903":
                     return SASLResult.SUCCESS
+                elif line.command == "904":
+                    match.pop(0)
 
         return SASLResult.FAILURE
 
