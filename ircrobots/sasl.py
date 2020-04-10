@@ -126,6 +126,7 @@ class SASLContext(ServerContext):
                 # prior to CAP v3.2 - ERR telling us which mechs are supported
                 available = line.params[1].split(",")
                 match     = _common(available)
+                await self.server.wait_for(NUMERICS_FAIL)
             elif line.command == "AUTHENTICATE" and line.params[0] == "+":
                 auth_text = ""
 
