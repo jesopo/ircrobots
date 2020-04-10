@@ -129,7 +129,7 @@ class SASLContext(ServerContext):
             elif line.command == "AUTHENTICATE" and line.params[0] == "+":
                 auth_text = ""
 
-                if match == "PLAIN":
+                if match[0] == "PLAIN":
                     auth_text = f"{username}\0{username}\0{password}"
                 elif match[0].startswith("SCRAM-SHA-"):
                     auth_text = await self._scram(
