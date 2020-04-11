@@ -1,6 +1,7 @@
-from ssl     import SSLContext
-from typing  import Optional, Tuple
-from asyncio import open_connection, StreamReader, StreamWriter
+from ssl           import SSLContext
+from typing        import Optional, Tuple
+from asyncio       import StreamReader, StreamWriter
+from async_stagger import open_connection
 
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
 from .security  import tls_context
@@ -34,9 +35,15 @@ class TCPTransport(ITCPTransport):
         if tls:
             cur_ssl = tls_context(tls_verify)
 
+        local_addr: Optional[Tuple[str, int]] = None
+        if not bindhost is None:
+            local_addr = (bindhost, 53567)
+
         reader, writer = await open_connection(
             hostname,
             port,
-            ssl=cur_ssl,
-            local_addr=(bindhost, 0))
+            server_hostname=hostname,
+            ssl            =cur_ssl,
+            local_addr     =local_addr)
         return (TCPReader(reader), TCPWriter(writer))
+
