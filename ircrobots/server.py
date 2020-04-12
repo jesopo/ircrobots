@@ -10,6 +10,7 @@ from .ircv3     import CAPContext, CAP_SASL
 from .sasl      import SASLContext, SASLResult
 from .matching  import ResponseOr, Numerics, Numeric, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
+from .struct    import Whois
 
 from .interface import (ConnectionParams, ICapability, IServer, SentLine,
     SendPriority, SASLParams, IMatchResponse)
@@ -177,3 +178,73 @@ class Server(IServer):
         else:
             return False
     # /CAP-related
+
+    def send_join(self,
+            name: str,
+            key: Optional[str]=None
+            ) -> Awaitable[Channel]:
+        fut = self.send_joins([name], [] if key is None else [key])
+
+        async def _assure():
+            channels = await fut
+            return channels[0]
+        return MaybeAwait(_assure)
+
+    def send_joins(self,
+            names: List[str],
+            keys:  List[str]=[]
+            ) -> Awaitable[List[Channel]]:
+
+        folded_names = [self.casefold(name) for name in names]
+
+        if not keys:
+            fut = self.send(build("JOIN", [",".join(names)]))
+        else:
+            fut = self.send(build("JOIN", [",".join(names)]+keys))
+
+        async def _assure():
+            await fut
+
+            channels: List[Channel] = []
+
+            while folded_names:
+                line = await self.wait_for(
+                    Numeric("RPL_CHANNELMODEIS", [ParamAny(), ParamAny()]))
+
+                folded = self.casefold(line.params[1])
+                if folded in folded_names:
+                    folded_names.remove(folded)
+                    channels.append(self.channels[folded])
+
+            return channels
+        return MaybeAwait(_assure)
+
+    def send_whois(self, target: str) -> Awaitable[Whois]:
+        folded = self.casefold(target)
+        fut = self.send(build("WHOIS", [target, target]))
+
+        async def _assure():
+            await fut
+            params = [ParamAny(), ParamFolded(folded)]
+            obj = Whois()
+            while True:
+                line = await self.wait_for(Numerics([
+                    "RPL_WHOISUSER",
+                    "RPL_WHOISSERVER",
+                    "RPL_WHOISOPERATOR",
+                    "RPL_WHOISIDLE",
+                    "RPL_WHOISHOST",
+                    "RPL_WHOISACCOUNT",
+                    "RPL_WHOISSECURE",
+                    "RPL_ENDOFWHOIS"
+                ], params))
+
+                if line.command   == NUMERIC_NAMES["RPL_WHOISUSER"]:
+                    obj.username, obj.hostname, _, obj.realname = line.params[2:]
+                elif line.command == NUMERIC_NAMES["RPL_WHOISIDLE"]:
+                    obj.idle, obj.signon, _ = line.params[2:]
+                elif line.command == NUMERIC_NAMES["RPL_WHOISACCOUNT"]:
+                    obj.account = line.params[2]
+                elif line.command == NUMERIC_NAMES["RPL_ENDOFWHOIS"]:
+                    return obj
+        return MaybeAwait(_assure)
