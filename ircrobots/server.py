@@ -106,11 +106,13 @@ class Server(IServer):
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
-            data  = await self._reader.read(1024)
-            lines = self.recv(data)
-
-            self._read_queue.extend(lines[1:])
-            both = lines[0]
+            data = await self._reader.read(1024)
+            while True:
+                lines = self.recv(data)
+                if lines:
+                    self._read_queue.extend(lines[1:])
+                    both = lines[0]
+                    break
 
         line, emits = both
         for emit in emits:
