@@ -97,6 +97,8 @@ class Server(IServer):
         realname = self.params.realname or nickname
 
         # these must remain non-awaited; reading hasn't started yet
+        if not self.params.password is None:
+            self.send(build("PASS", [self.params.password]))
         self.send(build("CAP",  ["LS", "302"]))
         self.send(build("NICK", [nickname]))
         self.send(build("USER", [username, "0", "*", realname]))

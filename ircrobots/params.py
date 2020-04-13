@@ -31,5 +31,6 @@ class ConnectionParams(object):
     realname: Optional[str] = None
     bindhost: Optional[str] = None
 
+    password:   Optional[str] = None
     tls_verify: bool = True
     sasl:       Optional[SASLParams] = None
