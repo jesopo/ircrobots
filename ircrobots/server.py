@@ -33,7 +33,7 @@ class Server(IServer):
         self.sasl_state = SASLResult.NONE
 
 
-        self._wait_for:    List[Tuple[Awaitable[Line], IMatchResponse]] = []
+        self._wait_for:    List[Tuple["Future[Line]", IMatchResponse]] = []
         self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
         self.desired_caps: Set[ICapability] = set([])
 
