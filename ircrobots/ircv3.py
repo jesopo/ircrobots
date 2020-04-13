@@ -34,7 +34,15 @@ class Capability(ICapability):
             alias=self.alias,
             depends_on=self.depends_on[:])
 
-CAP_SASL = Capability("sasl")
+CAP_SASL  = Capability("sasl")
+CAP_ECHO  = Capability("echo-message")
+CAP_LABEL = Capability("labeled-response", "draft/labeled-response-0.2")
+
+LABEL_TAG = {
+    "draft/labeled-response-0.2": "draft/label",
+    "labeled-response": "label"
+}
+
 CAPS: List[ICapability] = [
     Capability("multi-prefix"),
     Capability("chghost"),

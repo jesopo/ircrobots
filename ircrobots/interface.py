@@ -33,10 +33,15 @@ class SendPriority(IntEnum):
     DEFAULT = MEDIUM
 
 class SentLine(object):
-    def __init__(self, priority: int, line: Line):
+    def __init__(self,
+            id:       int,
+            priority: int,
+            line:     Line):
+        self.id             = id
         self.priority       = priority
         self.line           = line
         self.future: Future = Future()
+
     def __lt__(self, other: "SentLine") -> bool:
         return self.priority < other.priority
 
@@ -61,9 +66,11 @@ class IServer(Server):
     params:       ConnectionParams
     desired_caps: Set[ICapability]
 
-    def send_raw(self, line: str, priority=SendPriority.DEFAULT) -> Future:
+    def send_raw(self, line: str, priority=SendPriority.DEFAULT
+            ) -> Awaitable[SentLine]:
         pass
-    def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
+    def send(self, line: Line, priority=SendPriority.DEFAULT
+            ) -> Awaitable[SentLine]:
         pass
 
     def wait_for(self, response: IMatchResponse) -> Awaitable[Line]:

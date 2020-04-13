@@ -6,7 +6,7 @@ from asyncio_throttle import Throttler
 from ircstates        import Emit, Channel, NUMERIC_NAMES
 from irctokens        import build, Line, tokenise
 
-from .ircv3     import CAPContext, CAP_SASL
+from .ircv3     import CAPContext, CAP_ECHO, CAP_SASL, CAP_LABEL, LABEL_TAG
 from .sasl      import SASLContext, SASLResult
 from .matching  import ResponseOr, Numerics, Numeric, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
@@ -33,6 +33,7 @@ class Server(IServer):
         self.sasl_state = SASLResult.NONE
 
 
+        self._sent_count:  int = 0
         self._wait_for:    List[Tuple["Future[Line]", IMatchResponse]] = []
         self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
         self.desired_caps: Set[ICapability] = set([])
@@ -48,12 +49,27 @@ class Server(IServer):
         return hostmask
 
     def send_raw(self, line: str, priority=SendPriority.DEFAULT
-            ) -> Future:
+            ) -> Awaitable[SentLine]:
         return self.send(tokenise(line), priority)
-    def send(self, line: Line, priority=SendPriority.DEFAULT) -> Future:
-        prio_line = SentLine(priority, line)
-        self._write_queue.put_nowait(prio_line)
-        return prio_line.future
+    def send(self, line: Line, priority=SendPriority.DEFAULT
+            ) -> Awaitable[SentLine]:
+        sent_line = SentLine(self._sent_count, priority, line)
+        self._sent_count += 1
+
+        label = self.cap_available(CAP_LABEL)
+        if not label is None:
+            tag = LABEL_TAG[label]
+            if line.tags is None or not tag in line.tags:
+                if line.tags is None:
+                    line.tags = {}
+                line.tags[tag] = str(sent_line.id)
+
+        self._write_queue.put_nowait(sent_line)
+
+        async def _assure() -> SentLine:
+            await sent_line.future
+            return sent_line
+        return MaybeAwait(_assure)
 
     def set_throttle(self, rate: int, time: float):
         self.throttle.rate_limit = rate
@@ -164,7 +180,7 @@ class Server(IServer):
         await self._writer.drain()
 
         for line in lines:
-            line.future.set_result(None)
+            line.future.set_result(line)
             await self.line_send(line.line)
 
         return [l.line for l in lines]
