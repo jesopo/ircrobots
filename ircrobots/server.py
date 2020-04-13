@@ -33,11 +33,19 @@ class Server(IServer):
         self.sasl_state = SASLResult.NONE
 
 
-        self._wait_for_cache: List[Tuple[Line, List[Emit]]] = []
-        self._write_queue:    PriorityQueue[SentLine] = PriorityQueue()
-        self.desired_caps:    Set[ICapability] = set([])
+        self._wait_for:    List[Tuple[Awaitable[Line], IMatchResponse]] = []
+        self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
+        self.desired_caps: Set[ICapability] = set([])
 
-        self._read_queue:     Deque[Tuple[Line, List[Emit]]] = deque()
+        self._read_queue:  Deque[Tuple[Line, List[Emit]]] = deque()
+
+    def hostmask(self) -> str:
+        hostmask = self.nickname
+        if not self.username is None:
+            hostmask += f"!{self.username}"
+        if not self.hostmask is None:
+            hostmask += f"@{self.hostname}"
+        return hostmask
 
     def send_raw(self, line: str, priority=SendPriority.DEFAULT
             ) -> Future:
@@ -124,12 +132,19 @@ class Server(IServer):
         return both
 
     async def wait_for(self, response: IMatchResponse) -> Line:
-        while True:
+        our_fut: "Future[Line]" = Future()
+        self._wait_for.append((our_fut, response))
+        while self._wait_for:
             both = await self.next_line()
             line, emits = both
 
-            if response.match(self, line):
-                return line
+            for i, (fut, waiting) in enumerate(self._wait_for):
+                if waiting.match(self, line):
+                    fut.set_result(line)
+                    self._wait_for.pop(i)
+                    break
+
+        return await our_fut
 
     async def line_send(self, line: Line):
         pass
