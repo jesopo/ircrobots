@@ -44,7 +44,7 @@ class Server(IServer):
         hostmask = self.nickname
         if not self.username is None:
             hostmask += f"!{self.username}"
-        if not self.hostmask is None:
+        if not self.hostname is None:
             hostmask += f"@{self.hostname}"
         return hostmask
 
