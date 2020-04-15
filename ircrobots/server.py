@@ -166,6 +166,13 @@ class Server(IServer):
 
     async def line_send(self, line: Line):
         pass
+    async def _on_write_line(self, line: Line):
+        if (line.command == "PRIVMSG" and
+                not self.cap_agreed(CAP_ECHO)):
+            new_line = line.with_source(self.hostmask())
+            emits = self.parse_tokens(new_line)
+            self._read_queue.append((new_line, emits))
+
     async def _write_lines(self) -> List[Line]:
         lines: List[SentLine] = []
 
@@ -183,6 +190,7 @@ class Server(IServer):
 
         for line in lines:
             line.future.set_result(line)
+            await self._on_write_line(line.line)
             await self.line_send(line.line)
 
         return [l.line for l in lines]
