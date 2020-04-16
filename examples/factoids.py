@@ -1,8 +1,10 @@
 import asyncio, re
+from argparse  import ArgumentParser
 from typing    import Dict, List, Optional
+
 from irctokens import build, Line
-from ircrobots import Bot     as BaseBot
-from ircrobots import Server  as BaseServer
+from ircrobots import Bot    as BaseBot
+from ircrobots import Server as BaseServer
 from ircrobots import ConnectionParams
 
 TRIGGER = "!"
@@ -27,8 +29,10 @@ def _sed(sed: str, s: str) -> Optional[str]:
             last = i+1
             if len(parts) == 4:
                 break
+        if last < (len(sed)):
+            parts.append(sed[last:])
 
-        pattern, replace, *args = parts
+        _, pattern, replace, *args = parts
         flags_s = (args or [""])[0]
 
         flags = re.I if "i" in flags_s else 0
@@ -58,8 +62,9 @@ class Database:
             del self._settings[setting]
 
 class Server(BaseServer):
-    def __init__(self, name: str, database: Database):
+    def __init__(self, name: str, channel: str, database: Database):
         super().__init__(name)
+        self._channel = channel
         self._database = database
 
     async def line_send(self, line: Line):
@@ -70,7 +75,7 @@ class Server(BaseServer):
 
         me = self.nickname_lower
         if line.command == "001":
-            await self.send(build("JOIN", ["##robots"]))
+            await self.send(build("JOIN", [self._channel]))
 
         if (
                 line.command == "PRIVMSG" and
@@ -137,19 +142,28 @@ class Server(BaseServer):
             await self.send(build("PRIVMSG", [line.params[0], out]))
 
 class Bot(BaseBot):
+    def __init__(self, channel: str):
+        super().__init__()
+        self._channel = channel
     def create_server(self, name: str):
-        return Server(name, Database())
+        return Server(name, self._channel, Database())
 
-async def main():
-    bot = Bot()
+async def main(hostname: str, channel: str, nickname: str):
+    bot = Bot(channel)
 
     params = ConnectionParams(
-        "robot",
-        "chat.freenode.invalid",
+        nickname,
+        hostname,
         6697,
         tls=True)
     await bot.add_server("freenode", params)
     await bot.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = ArgumentParser(description="A simple IRC bot for factoids")
+    parser.add_argument("hostname")
+    parser.add_argument("channel")
+    parser.add_argument("nickname")
+    args = parser.parse_args()
+
+    asyncio.run(main(args.hostname, args.channel, args.nickname))
