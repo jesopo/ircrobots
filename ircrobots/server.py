@@ -2,13 +2,14 @@ from asyncio     import Future, PriorityQueue
 from typing      import Awaitable, Deque, Dict, List, Optional, Set, Tuple
 from collections import deque
 
-from asyncio_throttle import Throttler
-from ircstates        import Emit, Channel, NUMERIC_NAMES
-from irctokens        import build, Line, tokenise
+from asyncio_throttle   import Throttler
+from ircstates          import Emit, Channel
+from ircstates.numerics import *
+from irctokens          import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_ECHO, CAP_SASL, CAP_LABEL, LABEL_TAG
 from .sasl      import SASLContext, SASLResult
-from .matching  import ResponseOr, Numerics, Numeric, ParamAny, ParamFolded
+from .matching  import ResponseOr, Response, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
 from .struct    import Whois
 
@@ -250,7 +251,7 @@ class Server(IServer):
 
             while folded_names:
                 line = await self.wait_for(
-                    Numeric("RPL_CHANNELMODEIS", [ParamAny(), ParamAny()]))
+                    Numeric(RPL_CHANNELMODEIS, [ParamAny(), ParamAny()]))
 
                 folded = self.casefold(line.params[1])
                 if folded in folded_names:
@@ -269,23 +270,24 @@ class Server(IServer):
             params = [ParamAny(), ParamFolded(folded)]
             obj = Whois()
             while True:
-                line = await self.wait_for(Numerics([
-                    "RPL_WHOISUSER",
-                    "RPL_WHOISSERVER",
-                    "RPL_WHOISOPERATOR",
-                    "RPL_WHOISIDLE",
-                    "RPL_WHOISHOST",
-                    "RPL_WHOISACCOUNT",
-                    "RPL_WHOISSECURE",
-                    "RPL_ENDOFWHOIS"
+                line = await self.wait_for(Responses([
+                    RPL_WHOISUSER,
+                    RPL_WHOISSERVER,
+                    RPL_WHOISOPERATOR,
+                    RPL_WHOISIDLE,
+                    RPL_WHOISHOST,
+                    RPL_WHOISACCOUNT,
+                    RPL_WHOISSECURE,
+                    RPL_ENDOFWHOIS
                 ], params))
 
-                if line.command   == NUMERIC_NAMES["RPL_WHOISUSER"]:
+                if line.command   == RPL_WHOISUSER:
                     obj.username, obj.hostname, _, obj.realname = line.params[2:]
-                elif line.command == NUMERIC_NAMES["RPL_WHOISIDLE"]:
-                    obj.idle, obj.signon, _ = line.params[2:]
-                elif line.command == NUMERIC_NAMES["RPL_WHOISACCOUNT"]:
+                elif line.command == RPL_WHOISIDLE:
+                    obj.idle, signon, _ = line.params[2:]
+                    obj.signon = int(signon)
+                elif line.command == RPL_WHOISACCOUNT:
                     obj.account = line.params[2]
-                elif line.command == NUMERIC_NAMES["RPL_ENDOFWHOIS"]:
+                elif line.command == RPL_ENDOFWHOIS:
                     return obj
         return MaybeAwait(_assure)

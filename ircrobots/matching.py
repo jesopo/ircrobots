@@ -1,6 +1,5 @@
 from typing     import List, Optional
 from irctokens  import Line
-from ircstates  import NUMERIC_NAMES
 from .interface import IServer, IMatchResponse, IMatchResponseParam
 
 class Responses(IMatchResponse):
@@ -32,24 +31,6 @@ class Response(Responses):
 
     def __repr__(self) -> str:
         return f"Response({self._commands[0]}: {self._params!r})"
-
-
-class Numeric(Response):
-    def __init__(self,
-            name:    str,
-            params:  List[IMatchResponseParam]=[]):
-        super().__init__(NUMERIC_NAMES.get(name, name), params)
-
-class Numerics(Responses):
-    def __init__(self,
-            numerics: List[str],
-            params:   List[IMatchResponseParam]=[]):
-        self._numerics = numerics
-        numerics = [NUMERIC_NAMES.get(n, n) for n in numerics]
-        super().__init__(numerics, params)
-
-    def __repr__(self) -> str:
-        return f"Numerics({self._numerics!r}: {self._params!r})"
 
 class ResponseOr(IMatchResponse):
     def __init__(self, *responses: IMatchResponse):

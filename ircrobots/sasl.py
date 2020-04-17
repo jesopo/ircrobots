@@ -1,9 +1,10 @@
-from typing      import List
-from enum        import Enum
-from base64      import b64decode, b64encode
-from irctokens   import build
+from typing    import List
+from enum      import Enum
+from base64    import b64decode, b64encode
+from irctokens import build
+from ircstates.numerics import *
 
-from .matching import Response, ResponseOr, Numerics, ParamAny
+from .matching import ResponseOr, Responses, Response, ParamAny
 from .contexts import ServerContext
 from .params   import SASLParams
 from .scram    import SCRAMContext
@@ -27,10 +28,10 @@ class SASLUnknownMechanismError(SASLError):
     pass
 
 AUTHENTICATE_ANY = Response("AUTHENTICATE", [ParamAny()])
-NUMERICS_FAIL    = Numerics(["ERR_SASLFAIL"])
-NUMERICS_INITIAL = Numerics(
-    ["ERR_SASLFAIL", "ERR_SASLALREADY", "RPL_SASLMECHS"])
-NUMERICS_LAST    = Numerics(["RPL_SASLSUCCESS", "ERR_SASLFAIL"])
+
+NUMERICS_FAIL    = Response(ERR_SASLFAIL)
+NUMERICS_INITIAL = Responses([ERR_SASLFAIL, ERR_SASLALREADY, RPL_SASLMECHS])
+NUMERICS_LAST    = Responses([RPL_SASLSUCCESS, ERR_SASLFAIL])
 
 def _b64e(s: str):
     return b64encode(s.encode("utf8")).decode("ascii")
