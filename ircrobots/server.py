@@ -9,7 +9,7 @@ from irctokens          import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_ECHO, CAP_SASL, CAP_LABEL, LABEL_TAG
 from .sasl      import SASLContext, SASLResult
-from .matching  import ResponseOr, Response, ParamAny, ParamFolded
+from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
 from .struct    import Whois
 
