@@ -27,6 +27,8 @@ class SASLError(Exception):
 class SASLUnknownMechanismError(SASLError):
     pass
 
+AUTH_BYTE_MAX = 400
+
 AUTHENTICATE_ANY = Response("AUTHENTICATE", [ParamAny()])
 
 NUMERICS_FAIL    = Response(ERR_SASLFAIL)
@@ -141,7 +143,7 @@ class SASLContext(ServerContext):
                     auth_text = _b64e(auth_text)
 
                 if auth_text:
-                    await self.server.send(build("AUTHENTICATE", [auth_text]))
+                    await self._send_auth_text(auth_text)
 
                 line = await self.server.wait_for(NUMERICS_LAST)
                 if line.command   == "903":
@@ -156,13 +158,13 @@ class SASLContext(ServerContext):
         scram = SCRAMContext(algo, username, password)
 
         client_first = _b64eb(scram.client_first())
-        await self.server.send(build("AUTHENTICATE", [client_first]))
+        await self._send_auth_text(client_first)
         line = await self.server.wait_for(AUTHENTICATE_ANY)
 
         server_first = _b64db(line.params[0])
         client_final = _b64eb(scram.server_first(server_first))
         if not client_final == "":
-            await self.server.send(build("AUTHENTICATE", [client_final]))
+            await self._send_auth_text(client_final)
             line = await self.server.wait_for(AUTHENTICATE_ANY)
 
             server_final = _b64db(line.params[0])
@@ -172,4 +174,11 @@ class SASLContext(ServerContext):
         else:
             return ""
 
+    async def _send_auth_text(self, text: str):
+        n = AUTH_BYTE_MAX
+        chunks = [text[i:i+n] for i in range(0, len(text), n)]
+        if len(chunks[-1]) == 400:
+            chunks.append("+")
 
+        for chunk in chunks:
+            await self.server.send(build("AUTHENTICATE", [chunk]))
