@@ -37,7 +37,7 @@ class TCPTransport(ITCPTransport):
 
         local_addr: Optional[Tuple[str, int]] = None
         if not bindhost is None:
-            local_addr = (bindhost, 53567)
+            local_addr = (bindhost, 0)
 
         reader, writer = await open_connection(
             hostname,
