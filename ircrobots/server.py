@@ -192,9 +192,9 @@ class Server(IServer):
         await self._writer.drain()
 
         for line in lines:
-            line.future.set_result(line)
             await self._on_write_line(line.line)
             await self.line_send(line.line)
+            line.future.set_result(line)
 
         return [l.line for l in lines]
 
