@@ -9,6 +9,7 @@ from irctokens          import build, Line, tokenise
 
 from .ircv3     import CAPContext, CAP_ECHO, CAP_SASL, CAP_LABEL, LABEL_TAG
 from .sasl      import SASLContext, SASLResult
+from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
 from .struct    import Whois
@@ -122,6 +123,7 @@ class Server(IServer):
         elif emit.command == "JOIN":
             if emit.self and not emit.channel is None:
                 await self.send(build("MODE", [emit.channel.name]))
+                await WHOContext(self).ensure(emit.channel.name)
 
     async def _on_read_line(self, line: Line):
         if line.command == "PING":
