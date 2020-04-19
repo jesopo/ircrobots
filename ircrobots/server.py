@@ -7,7 +7,8 @@ from ircstates          import Emit, Channel
 from ircstates.numerics import *
 from irctokens          import build, Line, tokenise
 
-from .ircv3     import CAPContext, CAP_ECHO, CAP_SASL, CAP_LABEL, LABEL_TAG
+from .ircv3     import (CAPContext, STSContext, CAP_ECHO, CAP_SASL, CAP_LABEL,
+    LABEL_TAG)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
@@ -80,10 +81,13 @@ class Server(IServer):
     async def connect(self,
             transport: ITCPTransport,
             params: ConnectionParams):
+        port, tls = await STSContext(self).transmute(
+            params.port, params.tls, params.sts)
+
         reader, writer = await transport.connect(
             params.host,
-            params.port,
-            tls       =params.tls,
+            port,
+            tls       =tls,
             tls_verify=params.tls_verify,
             bindhost  =params.bindhost)
 

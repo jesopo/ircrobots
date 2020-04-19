@@ -23,7 +23,7 @@ class Bot(object):
     async def add_server(self, name: str, params: ConnectionParams) -> Server:
         server = self.create_server(name)
         self.servers[name] = server
-        await server.connect(TCPTransport() ,params)
+        await server.connect(TCPTransport(), params)
         await self._server_queue.put(server)
         return server
 

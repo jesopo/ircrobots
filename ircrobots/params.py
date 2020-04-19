@@ -21,6 +21,13 @@ class SASLExternal(SASLParams):
         super().__init__("EXTERNAL")
 
 @dataclass
+class STSPolicy(object):
+    created:  int
+    port:     int
+    duration: int
+    preload:  bool
+
+@dataclass
 class ConnectionParams(object):
     nickname: str
     host:     str
@@ -34,3 +41,5 @@ class ConnectionParams(object):
     password:   Optional[str] = None
     tls_verify: bool = True
     sasl:       Optional[SASLParams] = None
+
+    sts: Optional[STSPolicy] = None

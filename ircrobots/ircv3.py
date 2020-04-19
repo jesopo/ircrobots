@@ -1,9 +1,12 @@
-from typing    import Dict, Iterable, List, Optional
-from irctokens import build
+from time        import time
+from typing      import Dict, Iterable, List, Optional, Tuple
+from dataclasses import dataclass
+from irctokens   import build
 
 from .contexts  import ServerContext
 from .matching  import Response, ResponseOr, ParamAny, ParamLiteral
 from .interface import ICapability
+from .params    import STSPolicy
 
 class Capability(ICapability):
     def __init__(self,
@@ -93,3 +96,16 @@ class CAPContext(ServerContext):
     async def handshake(self):
         await self.on_ls(self.server.available_caps)
         await self.server.send(build("CAP", ["END"]))
+
+class STSContext(ServerContext):
+    async def transmute(self,
+            port: int,
+            tls: bool,
+            sts: Optional[STSPolicy]) -> Tuple[int, bool]:
+        if not sts is None:
+            now   = time()
+            since = (now-sts.created)
+            if since <= sts.duration:
+                return sts.port, True
+
+        return port, tls
