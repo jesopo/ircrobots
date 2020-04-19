@@ -43,10 +43,12 @@ class TCPTransport(ITCPTransport):
         if not bindhost is None:
             local_addr = (bindhost, 0)
 
+        server_hostname = hostname if tls else None
+
         reader, writer = await open_connection(
             hostname,
             port,
-            server_hostname=hostname,
+            server_hostname=server_hostname,
             ssl            =cur_ssl,
             local_addr     =local_addr)
         return (TCPReader(reader), TCPWriter(writer))
