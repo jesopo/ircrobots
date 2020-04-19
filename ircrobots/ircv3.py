@@ -6,7 +6,7 @@ from irctokens   import build
 from .contexts  import ServerContext
 from .matching  import Response, ResponseOr, ParamAny, ParamLiteral
 from .interface import ICapability
-from .params    import STSPolicy
+from .params    import ConnectionParams, STSPolicy
 
 class Capability(ICapability):
     def __init__(self,
@@ -19,16 +19,18 @@ class Capability(ICapability):
         self.alias = alias or ratified_name
         self.depends_on = depends_on.copy()
 
-        self._caps = set((ratified_name, draft_name))
+        self._caps = [ratified_name, draft_name]
+
+    def match(self, capability: str) -> bool:
+        return capability in self._caps
 
     def available(self, capabilities: Iterable[str]
             ) -> Optional[str]:
-        match = list(set(capabilities)&self._caps)
-        return match[0] if match else None
-
-    def match(self, capability: str) -> Optional[str]:
-        cap = list(set([capability])&self._caps)
-        return cap[0] if cap else None
+        for cap in self._caps:
+            if not cap is None and cap in capabilities:
+                return cap
+        else:
+            return None
 
     def copy(self):
         return Capability(
@@ -40,6 +42,7 @@ class Capability(ICapability):
 CAP_SASL  = Capability("sasl")
 CAP_ECHO  = Capability("echo-message")
 CAP_LABEL = Capability("labeled-response", "draft/labeled-response-0.2")
+CAP_STS   = Capability("sts", "draft/sts")
 
 LABEL_TAG = {
     "draft/labeled-response-0.2": "draft/label",
@@ -64,6 +67,13 @@ CAPS: List[ICapability] = [
     Capability(None, "draft/rename", alias="rename"),
     Capability("setname", "draft/setname")
 ]
+
+def _cap_dict(s: str) -> Dict[str, str]:
+    d: Dict[str, str] = {}
+    for token in s.split(","):
+        key, _, value = token.partition("=")
+        d[key] = value
+    return d
 
 class CAPContext(ServerContext):
     async def on_ls(self, tokens: Dict[str, str]):
@@ -94,18 +104,34 @@ class CAPContext(ServerContext):
             await self.server.sasl_auth(self.server.params.sasl)
 
     async def handshake(self):
+        cap_sts = CAP_STS.available(self.server.available_caps)
+        if not cap_sts is None:
+            sts_dict = _cap_dict(self.server.available_caps[cap_sts])
+            params   = self.server.params
+            if not params.tls:
+                if "port" in sts_dict:
+                    params.port = int(sts_dict["port"])
+                    params.tls  = True
+
+                    await self.server.bot.disconnect(self.server)
+                    await self.server.bot.add_server(self.server.name, params)
+                    return
+            elif "duration" in sts_dict:
+                policy = STSPolicy(
+                    int(time()),
+                    params.port,
+                    int(sts_dict["duration"]),
+                    "preload" in sts_dict)
+                self.server.sts_policy(policy)
+
         await self.on_ls(self.server.available_caps)
         await self.server.send(build("CAP", ["END"]))
 
 class STSContext(ServerContext):
-    async def transmute(self,
-            port: int,
-            tls: bool,
-            sts: Optional[STSPolicy]) -> Tuple[int, bool]:
-        if not sts is None:
+    async def transmute(self, params: ConnectionParams):
+        if not params.sts is None and not params.tls:
             now   = time()
-            since = (now-sts.created)
-            if since <= sts.duration:
-                return sts.port, True
-
-        return port, tls
+            since = (now-params.sts.created)
+            if since <= params.sts.duration:
+                params.port = params.sts.port
+                params.tls  = True

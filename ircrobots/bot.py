@@ -5,20 +5,28 @@ from typing import Dict
 
 from .server    import ConnectionParams, Server
 from .transport import TCPTransport
+from .interface import IBot, IServer
 
 RECONNECT_DELAY = 10.0 # ten seconds reconnect
 
-class Bot(object):
+class Bot(IBot):
     def __init__(self):
         self.servers: Dict[str, Server] = {}
         self._server_queue: asyncio.Queue[Server] = asyncio.Queue()
 
     # methods designed to be overridden
     def create_server(self, name: str):
-        return Server(name)
-    async def disconnected(self, server: Server):
-        await asyncio.sleep(RECONNECT_DELAY)
-        await self.add_server(server.name, server.params)
+        return Server(self, name)
+    async def disconnected(self, server: IServer):
+        if (server.name in self.servers and
+                server.disconnected):
+            await asyncio.sleep(RECONNECT_DELAY)
+            await self.add_server(server.name, server.params)
+    # /methods designed to be overridden
+
+    async def disconnect(self, server: IServer):
+        await server.disconnect()
+        del self.servers[server.name]
 
     async def add_server(self, name: str, params: ConnectionParams) -> Server:
         server = self.create_server(name)
@@ -31,7 +39,9 @@ class Bot(object):
         async with anyio.create_task_group() as tg:
             async def _read():
                 while not tg.cancel_scope.cancel_called:
-                    line, emits = await server.next_line()
+                    both = await server.next_line()
+                    if both is None:
+                        break
                 await tg.cancel_scope.cancel()
 
             async def _write():
@@ -42,7 +52,6 @@ class Bot(object):
             await tg.spawn(_write)
             await tg.spawn(_read)
 
-        del self.servers[server.name]
         await self.disconnected(server)
 
     async def run(self):

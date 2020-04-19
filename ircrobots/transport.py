@@ -22,6 +22,10 @@ class TCPWriter(ITCPWriter):
     async def drain(self):
         await self._writer.drain()
 
+    async def close(self):
+        self._writer.close()
+        await self._writer.wait_closed()
+
 class TCPTransport(ITCPTransport):
     async def connect(self,
             hostname:   str,

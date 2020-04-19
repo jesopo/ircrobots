@@ -5,7 +5,7 @@ from enum    import IntEnum
 from ircstates import Server, Emit
 from irctokens import Line
 
-from .params   import ConnectionParams, SASLParams
+from .params   import ConnectionParams, SASLParams, STSPolicy
 
 class ITCPReader(object):
     async def read(self, byte_count: int):
@@ -49,7 +49,7 @@ class ICapability(object):
     def available(self, capabilities: Iterable[str]) -> Optional[str]:
         pass
 
-    def match(self, capability: str) -> Optional[str]:
+    def match(self, capability: str) -> bool:
         pass
 
     def copy(self) -> "ICapability":
@@ -63,6 +63,7 @@ class IMatchResponseParam(object):
         pass
 
 class IServer(Server):
+    disconnected: bool
     params:       ConnectionParams
     desired_caps: Set[ICapability]
 
@@ -83,13 +84,17 @@ class IServer(Server):
             transport: ITCPTransport,
             params:    ConnectionParams):
         pass
+    async def disconnect(self):
+        pass
 
     async def line_read(self, line: Line):
         pass
     async def line_send(self, line: Line):
         pass
+    def sts_policy(self, sts: STSPolicy):
+        pass
 
-    async def next_line(self) -> Tuple[Line, List[Emit]]:
+    async def next_line(self) -> Optional[Tuple[Line, List[Emit]]]:
         pass
 
     def cap_agreed(self, capability: ICapability) -> bool:
@@ -98,4 +103,19 @@ class IServer(Server):
         pass
 
     async def sasl_auth(self, sasl: SASLParams) -> bool:
+        pass
+
+class IBot(object):
+    def create_server(self, name: str) -> IServer:
+        pass
+    async def disconnected(self, server: IServer):
+        pass
+
+    async def disconnect(self, server: IServer):
+        pass
+
+    async def add_server(self, name: str, params: ConnectionParams) -> IServer:
+        pass
+
+    async def run(self):
         pass

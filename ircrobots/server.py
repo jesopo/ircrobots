@@ -5,6 +5,7 @@ from collections import deque
 from asyncio_throttle   import Throttler
 from ircstates          import Emit, Channel
 from ircstates.numerics import *
+from ircstates.server   import ServerDisconnectedException
 from irctokens          import build, Line, tokenise
 
 from .ircv3     import (CAPContext, STSContext, CAP_ECHO, CAP_SASL, CAP_LABEL,
@@ -14,9 +15,9 @@ from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
 from .asyncs    import MaybeAwait
 from .struct    import Whois
-
-from .interface import (ConnectionParams, ICapability, IServer, SentLine,
-    SendPriority, SASLParams, IMatchResponse)
+from .params    import ConnectionParams, SASLParams, STSPolicy
+from .interface import (IBot, ICapability, IServer, SentLine, SendPriority,
+    IMatchResponse)
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
 
 THROTTLE_RATE = 4 # lines
@@ -27,14 +28,16 @@ class Server(IServer):
     _writer: ITCPWriter
     params:  ConnectionParams
 
-    def __init__(self, name: str):
+    def __init__(self, bot: IBot, name: str):
         super().__init__(name)
+        self.bot = bot
+
+        self.disconnected = False
 
         self.throttle = Throttler(
             rate_limit=100, period=THROTTLE_TIME)
 
         self.sasl_state = SASLResult.NONE
-
 
         self._sent_count:  int = 0
         self._wait_for:    List[Tuple["Future[Line]", IMatchResponse]] = []
@@ -81,13 +84,12 @@ class Server(IServer):
     async def connect(self,
             transport: ITCPTransport,
             params: ConnectionParams):
-        port, tls = await STSContext(self).transmute(
-            params.port, params.tls, params.sts)
+        await STSContext(self).transmute(params)
 
         reader, writer = await transport.connect(
             params.host,
-            port,
-            tls       =tls,
+            params.port,
+            tls       =params.tls,
             tls_verify=params.tls_verify,
             bindhost  =params.bindhost)
 
@@ -96,6 +98,11 @@ class Server(IServer):
 
         self.params = params
         await self.handshake()
+    async def disconnect(self):
+        if not self._writer is None:
+            await self._writer.close()
+            self._writer = None
+            self._read_queue.clear()
 
     async def handshake(self):
         nickname = self.params.nickname
@@ -133,16 +140,18 @@ class Server(IServer):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
-    async def line_read(self, line: Line):
-        pass
-
-    async def next_line(self) -> Tuple[Line, List[Emit]]:
+    async def next_line(self) -> Optional[Tuple[Line, List[Emit]]]:
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
-            data = await self._reader.read(1024)
             while True:
-                lines = self.recv(data)
+                data  = await self._reader.read(1024)
+                try:
+                    lines = self.recv(data)
+                except ServerDisconnectedException:
+                    self.disconnected = True
+                    return None
+
                 if lines:
                     self._read_queue.extend(lines[1:])
                     both = lines[0]
@@ -161,18 +170,20 @@ class Server(IServer):
         self._wait_for.append((our_fut, response))
         while self._wait_for:
             both = await self.next_line()
-            line, emits = both
 
-            for i, (fut, waiting) in enumerate(self._wait_for):
-                if waiting.match(self, line):
-                    fut.set_result(line)
-                    self._wait_for.pop(i)
-                    break
+            if not both is None:
+                line, emits = both
+
+                for i, (fut, waiting) in enumerate(self._wait_for):
+                    if waiting.match(self, line):
+                        fut.set_result(line)
+                        self._wait_for.pop(i)
+                        break
+            else:
+                fut.set_result(build(""))
 
         return await our_fut
 
-    async def line_send(self, line: Line):
-        pass
     async def _on_write_line(self, line: Line):
         if (line.command == "PRIVMSG" and
                 not self.cap_agreed(CAP_ECHO)):
