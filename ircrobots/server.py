@@ -8,8 +8,8 @@ from ircstates.numerics import *
 from ircstates.server   import ServerDisconnectedException
 from irctokens          import build, Line, tokenise
 
-from .ircv3     import (CAPContext, STSContext, CAP_ECHO, CAP_SASL, CAP_LABEL,
-    LABEL_TAG)
+from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
+    CAP_LABEL, LABEL_TAG)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
@@ -84,7 +84,7 @@ class Server(IServer):
     async def connect(self,
             transport: ITCPTransport,
             params: ConnectionParams):
-        await STSContext(self).transmute(params)
+        await sts_transmute(params)
 
         reader, writer = await transport.connect(
             params.host,

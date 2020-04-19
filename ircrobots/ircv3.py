@@ -75,6 +75,14 @@ def _cap_dict(s: str) -> Dict[str, str]:
         d[key] = value
     return d
 
+async def sts_transmute(params: ConnectionParams):
+    if not params.sts is None and not params.tls:
+        now   = time()
+        since = (now-params.sts.created)
+        if since <= params.sts.duration:
+            params.port = params.sts.port
+            params.tls  = True
+
 class CAPContext(ServerContext):
     async def on_ls(self, tokens: Dict[str, str]):
         caps = list(self.server.desired_caps)+CAPS
@@ -126,12 +134,3 @@ class CAPContext(ServerContext):
 
         await self.on_ls(self.server.available_caps)
         await self.server.send(build("CAP", ["END"]))
-
-class STSContext(ServerContext):
-    async def transmute(self, params: ConnectionParams):
-        if not params.sts is None and not params.tls:
-            now   = time()
-            since = (now-params.sts.created)
-            if since <= params.sts.duration:
-                params.port = params.sts.port
-                params.tls  = True
