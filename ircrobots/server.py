@@ -251,7 +251,8 @@ class Server(IServer):
 
             while folded_names:
                 line = await self.wait_for(
-                    Numeric(RPL_CHANNELMODEIS, [ParamAny(), ParamAny()]))
+                    Response(RPL_CHANNELMODEIS, [ParamAny(), ParamAny()])
+                )
 
                 folded = self.casefold(line.params[1])
                 if folded in folded_names:
