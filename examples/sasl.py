@@ -13,7 +13,7 @@ class Server(BaseServer):
 
 class Bot(BaseBot):
     def create_server(self, name: str):
-        return Server(name)
+        return Server(self, name)
 
 async def main():
     bot = Bot()
