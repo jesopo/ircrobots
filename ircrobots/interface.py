@@ -63,6 +63,7 @@ class IMatchResponseParam(object):
         pass
 
 class IServer(Server):
+    bot:          IBot
     disconnected: bool
     params:       ConnectionParams
     desired_caps: Set[ICapability]
