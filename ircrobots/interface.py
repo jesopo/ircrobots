@@ -92,7 +92,7 @@ class IServer(Server):
         pass
     async def line_send(self, line: Line):
         pass
-    def sts_policy(self, sts: STSPolicy):
+    async def sts_policy(self, sts: STSPolicy):
         pass
 
     async def next_line(self) -> Optional[Tuple[Line, List[Emit]]]:

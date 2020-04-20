@@ -138,5 +138,5 @@ class CAPContext(ServerContext):
                     params.port,
                     int(sts_dict["duration"]),
                     "preload" in sts_dict)
-                self.server.sts_policy(policy)
+                await self.server.sts_policy(policy)
 
