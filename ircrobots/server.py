@@ -12,7 +12,8 @@ from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
     CAP_LABEL, LABEL_TAG)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
-from .matching  import ResponseOr, Responses, Response, ParamAny, ParamFolded
+from .matching  import (ResponseOr, Responses, Response, ParamAny, ParamFolded,
+    Nickname)
 from .asyncs    import MaybeAwait
 from .struct    import Whois
 from .params    import ConnectionParams, SASLParams, STSPolicy
@@ -243,6 +244,17 @@ class Server(IServer):
         async def _assure():
             channels = await fut
             return channels[0]
+        return MaybeAwait(_assure)
+    def send_part(self, name: str):
+        fut = self.send(build("PART", [name]))
+
+        async def _assure():
+            line = await self.wait_for(Response(
+                "PART",
+                [ParamFolded(name)],
+                source=Nickname(self.nickname_lower)
+            ))
+            return
         return MaybeAwait(_assure)
 
     def send_joins(self,
