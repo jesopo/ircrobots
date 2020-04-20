@@ -140,7 +140,7 @@ class Server(IServer):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
-    async def next_line(self) -> Optional[Tuple[Line, List[Emit]]]:
+    async def next_line(self) -> Tuple[Line, List[Emit]]:
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
@@ -150,7 +150,7 @@ class Server(IServer):
                     lines = self.recv(data)
                 except ServerDisconnectedException:
                     self.disconnected = True
-                    return None
+                    raise
 
                 if lines:
                     self._read_queue.extend(lines[1:])
@@ -170,17 +170,13 @@ class Server(IServer):
         self._wait_for.append((our_fut, response))
         while self._wait_for:
             both = await self.next_line()
+            line, emits = both
 
-            if not both is None:
-                line, emits = both
-
-                for i, (fut, waiting) in enumerate(self._wait_for):
-                    if waiting.match(self, line):
-                        fut.set_result(line)
-                        self._wait_for.pop(i)
-                        break
-            else:
-                fut.set_result(build(""))
+            for i, (fut, waiting) in enumerate(self._wait_for):
+                if waiting.match(self, line):
+                    fut.set_result(line)
+                    self._wait_for.pop(i)
+                    break
 
         return await our_fut
 

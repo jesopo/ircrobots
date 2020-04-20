@@ -1,7 +1,8 @@
 import asyncio
 import anyio
-
 from typing import Dict
+
+from ircstates.server import ServerDisconnectedException
 
 from .server    import ConnectionParams, Server
 from .transport import TCPTransport
@@ -39,8 +40,9 @@ class Bot(IBot):
         async with anyio.create_task_group() as tg:
             async def _read():
                 while not tg.cancel_scope.cancel_called:
-                    both = await server.next_line()
-                    if both is None:
+                    try:
+                        both = await server.next_line()
+                    except ServerDisconnectedException:
                         break
                 await tg.cancel_scope.cancel()
 
