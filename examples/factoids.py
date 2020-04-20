@@ -62,8 +62,8 @@ class Database:
             del self._settings[setting]
 
 class Server(BaseServer):
-    def __init__(self, name: str, channel: str, database: Database):
-        super().__init__(name)
+    def __init__(self, bot: Bot, name: str, channel: str, database: Database):
+        super().__init__(bot, name)
         self._channel = channel
         self._database = database
 
@@ -146,7 +146,7 @@ class Bot(BaseBot):
         super().__init__()
         self._channel = channel
     def create_server(self, name: str):
-        return Server(name, self._channel, Database())
+        return Server(self, name, self._channel, Database())
 
 async def main(hostname: str, channel: str, nickname: str):
     bot = Bot(channel)
