@@ -3,7 +3,7 @@ from typing  import Awaitable, Iterable, List, Optional, Set, Tuple
 from enum    import IntEnum
 
 from ircstates import Server, Emit
-from irctokens import Line
+from irctokens import Line, Hostmask
 
 from .params   import ConnectionParams, SASLParams, STSPolicy
 
@@ -60,6 +60,9 @@ class IMatchResponse(object):
         pass
 class IMatchResponseParam(object):
     def match(self, server: "IServer", arg: str) -> bool:
+        pass
+class IMatchResponseHostmask(object):
+    def match(self, server: "IServer", hostmask: Hostmask) -> bool:
         pass
 
 class IServer(Server):
