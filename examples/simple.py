@@ -2,21 +2,25 @@ import asyncio
 
 from irctokens import build, Line
 from ircrobots import Bot as BaseBot
-from ircrobots import ConnectionParams, Server
+from ircrobots import Server as BaseServer
+from ircrobots import ConnectionParams
 
 SERVERS = [
     ("freenode", "chat.freenode.invalid")
 ]
 
-class Bot(BaseBot):
-    async def line_read(self, server: Server, line: Line):
-        print(f"{server.name}< {line.format()}")
+class Server(BaseServer):
+    async def line_read(self, line: Line):
+        print(f"{self.name} < {line.format()}")
         if line.command == "001":
-            print(f"connected to {server.isupport.network}")
-            await server.send(build("JOIN", ["#testchannel"]))
+            print(f"connected to {self.isupport.network}")
+            await self.send(build("JOIN", ["#testchannel"]))
+    async def line_send(self, line: Line):
+        print(f"{self.name} > {line.format()}")
 
-    async def line_send(self, server: Server, line: Line):
-        print(f"{server.name}> {line.format()}")
+class Bot(BaseBot):
+    def create_server(self, name: str):
+        return Server(self, name)
 
 async def main():
     bot = Bot()
