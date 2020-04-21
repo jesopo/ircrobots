@@ -87,7 +87,7 @@ class Server(BaseServer):
 
             channel = self.channels[self.casefold(line.params[0])]
             user    = self.users[self.casefold(line.hostmask.nickname)]
-            cuser   = self.channel_users[channel][user]
+            cuser   = channel.users[user.nickname_lower]
             text    = line.params[1].replace(TRIGGER, "", 1)
             db_context = f"{self.name}:{channel.name}"
 
