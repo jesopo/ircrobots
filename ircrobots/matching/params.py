@@ -1,6 +1,7 @@
-from typing      import Optional
-from irctokens   import Hostmask
-from ..interface import IMatchResponseParam, IMatchResponseHostmask, IServer
+from typing       import Optional
+from irctokens    import Hostmask
+from ..interface  import IMatchResponseParam, IMatchResponseHostmask, IServer
+from .. import formatting
 
 class Any(IMatchResponseParam):
     def __repr__(self) -> str:
@@ -22,11 +23,19 @@ class Folded(IMatchResponseParam):
         self._value = value
         self._folded: Optional[str] = None
     def __repr__(self) -> str:
-        return f"FoldString({self._value!r})"
+        return f"Folded({self._value!r})"
     def match(self, server: IServer, arg: str) -> bool:
         if self._folded is None:
             self._folded = server.casefold(self._value)
         return self._folded == server.casefold(arg)
+
+class Formatless(Literal):
+    def __repr__(self) -> str:
+        brepr = super().__repr__()
+        return f"Formatless({brepr})"
+    def match(self, server: IServer, arg: str) -> bool:
+        strip = formatting.strip(arg)
+        return super().match(server, strip)
 
 class Not(IMatchResponseParam):
     def __init__(self, param: IMatchResponseParam):
