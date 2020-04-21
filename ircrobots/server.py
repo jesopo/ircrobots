@@ -117,6 +117,15 @@ class Server(IServer):
         self.send(build("NICK", [nickname]))
         self.send(build("USER", [username, "0", "*", realname]))
 
+    # to be overridden
+    async def line_read(self, line: Line):
+        pass
+    async def line_send(self, line: Line):
+        pass
+    async def sts_policy(self, sts: STSPolicy):
+        pass
+    # /to be overriden
+
     async def _on_read_emit(self, line: Line, emit: Emit):
         if emit.command == "001":
             await self.send(build("WHO", [self.nickname]))
