@@ -4,7 +4,7 @@ from base64    import b64decode, b64encode
 from irctokens import build
 from ircstates.numerics import *
 
-from .matching import ResponseOr, Responses, Response, ParamAny
+from .matching import ResponseOr, Responses, Response, ANY
 from .contexts import ServerContext
 from .params   import SASLParams
 from .scram    import SCRAMContext
@@ -29,7 +29,7 @@ class SASLUnknownMechanismError(SASLError):
 
 AUTH_BYTE_MAX = 400
 
-AUTHENTICATE_ANY = Response("AUTHENTICATE", [ParamAny()])
+AUTHENTICATE_ANY = Response("AUTHENTICATE", [ANY])
 
 NUMERICS_FAIL    = Response(ERR_SASLFAIL)
 NUMERICS_INITIAL = Responses([ERR_SASLFAIL, ERR_SASLALREADY, RPL_SASLMECHS])

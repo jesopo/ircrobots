@@ -12,8 +12,7 @@ from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
     CAP_LABEL, LABEL_TAG)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
-from .matching  import (ResponseOr, Responses, Response, ParamAny, ParamFolded,
-    Nickname)
+from .matching  import ResponseOr, Responses, Response, ANY, Folded, Nickname
 from .asyncs    import MaybeAwait
 from .struct    import Whois
 from .params    import ConnectionParams, SASLParams, STSPolicy
@@ -285,7 +284,7 @@ class Server(IServer):
 
             while folded_names:
                 line = await self.wait_for(
-                    Response(RPL_CHANNELMODEIS, [ParamAny(), ParamAny()])
+                    Response(RPL_CHANNELMODEIS, [ANY, ANY])
                 )
 
                 folded = self.casefold(line.params[1])
@@ -302,7 +301,7 @@ class Server(IServer):
 
         async def _assure():
             await fut
-            params = [ParamAny(), ParamFolded(folded)]
+            params = [ANY, Folded(folded)]
             obj = Whois()
             while True:
                 line = await self.wait_for(Responses([

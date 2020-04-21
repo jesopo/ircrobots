@@ -3,7 +3,7 @@ from irctokens import build
 from ircstates.numerics import *
 
 from .contexts  import ServerContext
-from .matching  import Response, ResponseOr, ParamAny, ParamFolded
+from .matching  import Response, ResponseOr, ANY, Folded
 
 class WHOContext(ServerContext):
     async def ensure(self, channel: str):
@@ -15,5 +15,5 @@ class WHOContext(ServerContext):
             await self.server.send(build("WHO", [channel]))
 
         line = await self.server.wait_for(
-            Response(RPL_ENDOFWHO, [ParamAny(), ParamFolded(folded)])
+            Response(RPL_ENDOFWHO, [ANY, Folded(folded)])
         )
