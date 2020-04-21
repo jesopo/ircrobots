@@ -40,8 +40,9 @@ class Responses(IMatchResponse):
 class Response(Responses):
     def __init__(self,
             command: str,
-            params:  List[TYPE_PARAM]=[]):
-        super().__init__([command], params)
+            params:  List[TYPE_PARAM]=[],
+            source:  Optional[IMatchResponseHostmask]=None):
+        super().__init__([command], params, source=source)
 
     def __repr__(self) -> str:
         return f"Response({self._commands[0]}: {self._params!r})"
