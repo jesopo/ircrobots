@@ -1,4 +1,5 @@
-from typing       import Optional
+from re           import compile
+from typing       import Optional, Pattern
 from irctokens    import Hostmask
 from ..interface  import IMatchResponseParam, IMatchResponseHostmask, IServer
 from .. import formatting
@@ -17,6 +18,14 @@ class Literal(IMatchResponseParam):
         return f"{self._value!r}"
     def match(self, server: IServer, arg: str) -> bool:
         return arg == self._value
+
+class Not(IMatchResponseParam):
+    def __init__(self, param: IMatchResponseParam):
+        self._param = param
+    def __repr__(self) -> str:
+        return f"Not({self._param!r})"
+    def match(self, server: IServer, arg: str) -> bool:
+        return not self._param.match(server, arg)
 
 class Folded(IMatchResponseParam):
     def __init__(self, value: str):
@@ -37,13 +46,14 @@ class Formatless(Literal):
         strip = formatting.strip(arg)
         return super().match(server, strip)
 
-class Not(IMatchResponseParam):
-    def __init__(self, param: IMatchResponseParam):
-        self._param = param
-    def __repr__(self) -> str:
-        return f"Not({self._param!r})"
+class Regex(IMatchResponseParam):
+    def __init__(self, value: str):
+        self._value = value
+        self._pattern: Optional[Pattern] = None
     def match(self, server: IServer, arg: str) -> bool:
-        return not self._param.match(server, arg)
+        if self._pattern is None:
+            self._pattern = compile(self._value)
+        return bool(self._pattern.search(arg))
 
 class Nickname(IMatchResponseHostmask):
     def __init__(self, nickname: str):
