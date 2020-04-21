@@ -54,7 +54,6 @@ CAPS: List[ICapability] = [
     Capability("multi-prefix"),
     Capability("chghost"),
     Capability("away-notify"),
-    Capability("userhost-in-names"),
 
     Capability("invite-notify"),
     Capability("account-tag"),
