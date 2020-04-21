@@ -5,7 +5,7 @@ from irctokens   import build
 from ircstates.server import ServerDisconnectedException
 
 from .contexts  import ServerContext
-from .matching  import Response, ResponseOr, ParamAny, ParamLiteral
+from .matching  import Response, ResponseOr, ParamAny
 from .interface import ICapability
 from .params    import ConnectionParams, STSPolicy
 
@@ -101,8 +101,8 @@ class CAPContext(ServerContext):
 
             while cap_names:
                 line = await self.server.wait_for(ResponseOr(
-                    Response("CAP", [ParamAny(), ParamLiteral("ACK")]),
-                    Response("CAP", [ParamAny(), ParamLiteral("NAK")])
+                    Response("CAP", [ParamAny(), "ACK"]),
+                    Response("CAP", [ParamAny(), "NAK"])
                 ))
 
                 current_caps = line.params[2].split(" ")

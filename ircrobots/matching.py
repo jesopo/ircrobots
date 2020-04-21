@@ -1,12 +1,13 @@
-from typing     import List, Optional
+from typing     import List, Optional, Union
 from irctokens  import Line, Hostmask
 from .interface import (IServer, IMatchResponse, IMatchResponseParam,
     IMatchResponseHostmask)
 
+TYPE_PARAM = Union[str, IMatchResponseParam]
 class Responses(IMatchResponse):
     def __init__(self,
             commands: List[str],
-            params:   List[IMatchResponseParam]=[],
+            params:   List[TYPE_PARAM]=[],
             source:   Optional[IMatchResponseHostmask]=None):
         self._commands = commands
         self._params   = params
@@ -23,7 +24,12 @@ class Responses(IMatchResponse):
                     ))):
 
                 for i, param in enumerate(self._params):
-                    if (i >= len(line.params) or
+                    if i >= len(line.params):
+                        break
+                    elif (isinstance(param, str) and
+                            not param == line.params[i]):
+                        break
+                    elif (isinstance(param, IMatchResponseParam) and
                             not param.match(server, line.params[i])):
                         break
                 else:
@@ -34,7 +40,7 @@ class Responses(IMatchResponse):
 class Response(Responses):
     def __init__(self,
             command: str,
-            params:  List[IMatchResponseParam]=[]):
+            params:  List[TYPE_PARAM]=[]):
         super().__init__([command], params)
 
     def __repr__(self) -> str:
@@ -57,14 +63,6 @@ class ParamAny(IMatchResponseParam):
         return "Any()"
     def match(self, server: IServer, arg: str) -> bool:
         return True
-
-class ParamLiteral(IMatchResponseParam):
-    def __init__(self, value: str):
-        self._value = value
-    def __repr__(self) -> str:
-        return f"Literal({self._value!r})"
-    def match(self, server: IServer, arg: str) -> bool:
-        return self._value == arg
 
 class ParamFolded(IMatchResponseParam):
     def __init__(self, value: str):
