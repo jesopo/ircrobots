@@ -25,7 +25,7 @@ class Responses(IMatchResponse):
                 for i, param in enumerate(self._params):
                     if (i >= len(line.params) or
                             not param.match(server, line.params[i])):
-                        continue
+                        break
                 else:
                     return True
         else:
