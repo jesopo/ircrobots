@@ -98,7 +98,7 @@ class IServer(Server):
     async def sts_policy(self, sts: STSPolicy):
         pass
 
-    async def next_line(self) -> Optional[Tuple[Line, List[Emit]]]:
+    async def next_line(self) -> Optional[Tuple[Line, Optional[Emit]]]:
         pass
 
     def cap_agreed(self, capability: ICapability) -> bool:

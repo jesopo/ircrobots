@@ -44,7 +44,7 @@ class Server(IServer):
         self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
         self.desired_caps: Set[ICapability] = set([])
 
-        self._read_queue:  Deque[Tuple[Line, List[Emit]]] = deque()
+        self._read_queue:  Deque[Tuple[Line, Optional[Emit]]] = deque()
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -149,7 +149,7 @@ class Server(IServer):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
-    async def next_line(self) -> Tuple[Line, List[Emit]]:
+    async def next_line(self) -> Tuple[Line, Optional[Emit]]:
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
@@ -166,8 +166,8 @@ class Server(IServer):
                     both = lines[0]
                     break
 
-        line, emits = both
-        for emit in emits:
+        line, emit = both
+        if emit is not None:
             await self._on_read_emit(line, emit)
         await self._on_read_line(line)
         await self.line_read(line)
@@ -179,7 +179,7 @@ class Server(IServer):
         self._wait_for.append((our_fut, response))
         while self._wait_for:
             both = await self.next_line()
-            line, emits = both
+            line, emit = both
 
             for i, (fut, waiting) in enumerate(self._wait_for):
                 if waiting.match(self, line):
@@ -193,8 +193,8 @@ class Server(IServer):
         if (line.command == "PRIVMSG" and
                 not self.cap_agreed(CAP_ECHO)):
             new_line = line.with_source(self.hostmask())
-            emits = self.parse_tokens(new_line)
-            self._read_queue.append((new_line, emits))
+            emit = self.parse_tokens(new_line)
+            self._read_queue.append((new_line, emit))
 
     async def _write_lines(self) -> List[Line]:
         lines: List[SentLine] = []
