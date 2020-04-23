@@ -192,13 +192,14 @@ class Server(IServer):
             await self._on_read_line(line)
             await self.line_read(line)
 
-        await self._line_or_wait(_line())
         for i, (aw, response, fut) in enumerate(self._wait_for):
             if response.match(self, line):
                 fut.set_result(line)
                 self._wait_for.pop(i)
                 await self._line_or_wait(aw)
                 break
+
+        await self._line_or_wait(_line())
 
         return both
 
