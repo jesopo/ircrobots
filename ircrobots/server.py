@@ -14,7 +14,7 @@ from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ANY, Folded, Nickname
-from .asyncs    import MaybeAwait
+from .asyncs    import MaybeAwait, WaitFor
 from .struct    import Whois
 from .params    import ConnectionParams, SASLParams, STSPolicy
 from .interface import (IBot, ICapability, IServer, SentLine, SendPriority,
@@ -23,8 +23,6 @@ from .interface import ITCPTransport, ITCPReader, ITCPWriter
 
 THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
-
-WAIT_TUP = Tuple[IMatchResponse, "Future[Line]"]
 
 class Server(IServer):
     _reader: ITCPReader
@@ -48,10 +46,8 @@ class Server(IServer):
 
         self._read_queue:  Deque[Tuple[Line, Optional[Emit]]] = deque()
 
-        self._wait_for:     List[
-            Tuple[Awaitable, IMatchResponse, "Future[Line]"]] = []
-
-        self._wait_for_fut: Optional["Future[WAIT_TUP]"] = None
+        self._wait_for:     List[Tuple[Awaitable, WaitFor]] = []
+        self._wait_for_fut: Optional["Future[WaitFor]"] = None
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -157,16 +153,15 @@ class Server(IServer):
             await self.send(build("PONG", line.params))
 
     async def _line_or_wait(self, line_fut: Awaitable):
-        wait_for_fut: Future[WAIT_TUP] = Future()
+        wait_for_fut: Future[WaitFor] = Future()
         self._wait_for_fut = wait_for_fut
 
         done, pend = await asyncio.wait([line_fut, wait_for_fut],
             return_when=asyncio.FIRST_COMPLETED)
 
         if wait_for_fut.done():
-            response, fut = await wait_for_fut
             new_line_fut = list(pend)[0]
-            self._wait_for.append((new_line_fut, response, fut))
+            self._wait_for.append((new_line_fut, await wait_for_fut))
 
     async def next_line(self) -> Tuple[Line, Optional[Emit]]:
         if self._read_queue:
@@ -192,9 +187,9 @@ class Server(IServer):
             await self._on_read_line(line)
             await self.line_read(line)
 
-        for i, (aw, response, fut) in enumerate(self._wait_for):
-            if response.match(self, line):
-                fut.set_result(line)
+        for i, (aw, wait_for) in enumerate(self._wait_for):
+            if wait_for.response.match(self, line):
+                wait_for.resolve(line)
                 self._wait_for.pop(i)
                 await self._line_or_wait(aw)
                 break
@@ -208,9 +203,9 @@ class Server(IServer):
         if wait_for_fut is not None:
             self._wait_for_fut = None
 
-            our_fut: "Future[Line]" = Future()
-            wait_for_fut.set_result((response, our_fut))
-            return await our_fut
+            our_wait_for = WaitFor(response)
+            wait_for_fut.set_result(our_wait_for)
+            return await our_wait_for
         raise Exception()
 
     async def _on_write_line(self, line: Line):
