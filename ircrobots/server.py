@@ -47,7 +47,7 @@ class Server(IServer):
         self._read_queue:  Deque[Tuple[Line, Optional[Emit]]] = deque()
 
         self._wait_for:     List[Tuple[Awaitable, WaitFor]] = []
-        self._wait_for_fut: Optional["Future[WaitFor]"] = None
+        self._wait_for_fut: Optional[Future[WaitFor]] = None
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -152,16 +152,16 @@ class Server(IServer):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
-    async def _line_or_wait(self, line_fut: Awaitable):
+    async def _line_or_wait(self, line_aw: Awaitable):
         wait_for_fut: Future[WaitFor] = Future()
         self._wait_for_fut = wait_for_fut
 
-        done, pend = await asyncio.wait([line_fut, wait_for_fut],
+        done, pend = await asyncio.wait([line_aw, wait_for_fut],
             return_when=asyncio.FIRST_COMPLETED)
 
         if wait_for_fut.done():
-            new_line_fut = list(pend)[0]
-            self._wait_for.append((new_line_fut, await wait_for_fut))
+            new_line_aw = list(pend)[0]
+            self._wait_for.append((new_line_aw, await wait_for_fut))
 
     async def next_line(self) -> Tuple[Line, Optional[Emit]]:
         if self._read_queue:
