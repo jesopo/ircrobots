@@ -8,4 +8,4 @@ install:
   - pip3 install mypy -r requirements.txt
 script:
   - pip3 freeze
-  - mypy ircrobots examples
+  - mypy ircrobots examples --ignore-missing-imports
