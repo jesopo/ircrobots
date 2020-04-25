@@ -28,6 +28,11 @@ class STSPolicy(object):
     preload:  bool
 
 @dataclass
+class ResumePolicy(object):
+    address: str
+    token:   str
+
+@dataclass
 class ConnectionParams(object):
     nickname: str
     host:     str
@@ -42,4 +47,5 @@ class ConnectionParams(object):
     tls_verify: bool = True
     sasl:       Optional[SASLParams] = None
 
-    sts: Optional[STSPolicy] = None
+    sts:    Optional[STSPolicy]    = None
+    resume: Optional[ResumePolicy] = None

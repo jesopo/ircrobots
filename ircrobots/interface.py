@@ -5,7 +5,7 @@ from enum    import IntEnum
 from ircstates import Server, Emit
 from irctokens import Line, Hostmask
 
-from .params   import ConnectionParams, SASLParams, STSPolicy
+from .params   import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
 
 class ITCPReader(object):
     async def read(self, byte_count: int):
@@ -13,7 +13,13 @@ class ITCPReader(object):
 class ITCPWriter(object):
     def write(self, data: bytes):
         pass
+
+    def get_peer(self) -> Tuple[str, int]:
+        pass
+
     async def drain(self):
+        pass
+    async def close(self):
         pass
 
 class ITCPTransport(object):
@@ -84,6 +90,9 @@ class IServer(Server):
     def set_throttle(self, rate: int, time: float):
         pass
 
+    def server_address(self) -> Tuple[str, int]:
+        pass
+
     async def connect(self,
             transport: ITCPTransport,
             params:    ConnectionParams):
@@ -96,6 +105,8 @@ class IServer(Server):
     async def line_send(self, line: Line):
         pass
     async def sts_policy(self, sts: STSPolicy):
+        pass
+    async def resume_policy(self, resume: ResumePolicy):
         pass
 
     async def next_line(self) -> Optional[Tuple[Line, Optional[Emit]]]:

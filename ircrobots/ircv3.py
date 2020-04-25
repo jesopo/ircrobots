@@ -7,7 +7,7 @@ from ircstates.server import ServerDisconnectedException
 from .contexts  import ServerContext
 from .matching  import Response, ResponseOr, ANY
 from .interface import ICapability
-from .params    import ConnectionParams, STSPolicy
+from .params    import ConnectionParams, STSPolicy, ResumePolicy
 
 class Capability(ICapability):
     def __init__(self,
@@ -40,10 +40,11 @@ class Capability(ICapability):
             alias=self.alias,
             depends_on=self.depends_on[:])
 
-CAP_SASL  = Capability("sasl")
-CAP_ECHO  = Capability("echo-message")
-CAP_LABEL = Capability("labeled-response", "draft/labeled-response-0.2")
-CAP_STS   = Capability("sts", "draft/sts")
+CAP_SASL   = Capability("sasl")
+CAP_ECHO   = Capability("echo-message")
+CAP_LABEL  = Capability("labeled-response", "draft/labeled-response-0.2")
+CAP_STS    = Capability("sts", "draft/sts")
+CAP_RESUME = Capability(None, "draft/resume-0.5", alias="resume")
 
 LABEL_TAG = {
     "draft/labeled-response-0.2": "draft/label",
@@ -65,7 +66,8 @@ CAPS: List[ICapability] = [
     Capability("batch"),
 
     Capability(None, "draft/rename", alias="rename"),
-    Capability("setname", "draft/setname")
+    Capability("setname", "draft/setname"),
+    CAP_RESUME
 ]
 
 def _cap_dict(s: str) -> Dict[str, str]:
@@ -82,6 +84,9 @@ async def sts_transmute(params: ConnectionParams):
         if since <= params.sts.duration:
             params.port = params.sts.port
             params.tls  = True
+async def resume_transmute(params: ConnectionParams):
+    if params.resume is not None:
+        params.host = params.resume.address
 
 class CAPContext(ServerContext):
     async def on_ls(self, tokens: Dict[str, str]):
@@ -109,9 +114,21 @@ class CAPContext(ServerContext):
                 for cap in current_caps:
                     if cap in cap_names:
                         cap_names.remove(cap)
+                if CAP_RESUME.available(current_caps):
+                    await self.resume_token()
+
         if (self.server.cap_agreed(CAP_SASL) and
                 not self.server.params.sasl is None):
             await self.server.sasl_auth(self.server.params.sasl)
+
+    async def resume_token(self):
+        line = await self.server.wait_for(Response("RESUME", ["TOKEN", ANY]))
+        token = line.params[1]
+        address, port = self.server.server_address()
+
+        resume_policy = ResumePolicy(address, token)
+        self.server.params.resume = resume_policy
+        await self.server.resume_policy(resume_policy)
 
     async def handshake(self):
         await self.on_ls(self.server.available_caps)

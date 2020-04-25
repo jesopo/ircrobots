@@ -10,13 +10,13 @@ from ircstates.server   import ServerDisconnectedException
 from irctokens          import build, Line, tokenise
 
 from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
-    CAP_LABEL, LABEL_TAG)
+    CAP_LABEL, LABEL_TAG, resume_transmute)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
 from .matching  import ResponseOr, Responses, Response, ANY, Folded, Nickname
 from .asyncs    import MaybeAwait, WaitFor
 from .struct    import Whois
-from .params    import ConnectionParams, SASLParams, STSPolicy
+from .params    import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
 from .interface import (IBot, ICapability, IServer, SentLine, SendPriority,
     IMatchResponse)
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
@@ -84,10 +84,14 @@ class Server(IServer):
         self.throttle.rate_limit = rate
         self.throttle.period     = time
 
+    def server_address(self) -> Tuple[str, int]:
+        return self._writer.get_peer()
+
     async def connect(self,
             transport: ITCPTransport,
             params: ConnectionParams):
         await sts_transmute(params)
+        await resume_transmute(params)
 
         reader, writer = await transport.connect(
             params.host,
@@ -125,6 +129,8 @@ class Server(IServer):
     async def line_send(self, line: Line):
         pass
     async def sts_policy(self, sts: STSPolicy):
+        pass
+    async def resume_policy(self, resume: ResumePolicy):
         pass
     # /to be overriden
 

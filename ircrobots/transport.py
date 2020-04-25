@@ -16,6 +16,10 @@ class TCPWriter(ITCPWriter):
     def __init__(self, writer: StreamWriter):
         self._writer = writer
 
+    def get_peer(self) -> Tuple[str, int]:
+        address, port, *_ = self._writer.transport.get_extra_info("peername")
+        return (address, port)
+
     def write(self, data: bytes):
         self._writer.write(data)
 
