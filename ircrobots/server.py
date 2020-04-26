@@ -43,7 +43,6 @@ class Server(IServer):
 
         self.sasl_state = SASLResult.NONE
         self.last_read  = -1.0
-        self._ping_sent = False
 
         self._sent_count:  int = 0
         self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
@@ -178,21 +177,21 @@ class Server(IServer):
         if self._read_queue:
             both = self._read_queue.popleft()
         else:
+            ping_sent = False
             while True:
-
                 try:
                     async with timeout(PING_TIMEOUT):
                         data = await self._reader.read(1024)
                 except asyncio.exceptions.TimeoutError:
-                    if self._ping_sent:
+                    if ping_sent:
                         data = b"" # empty data means the socket disconnected
                     else:
-                        self._ping_sent = True
+                        ping_sent = True
                         await self.send(build("PING", ["hello"]))
                         continue
 
                 self.last_read  = monotonic()
-                self._ping_sent = False
+                ping_sent       = False
 
                 try:
                     lines = self.recv(data)
