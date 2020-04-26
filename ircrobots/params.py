@@ -2,23 +2,19 @@ from typing      import Optional
 from dataclasses import dataclass
 
 class SASLParams(object):
-    def __init__(self,
-            mechanism: str,
-            username:  str="",
-            password:  str=""):
-        self.mechanism = mechanism.upper()
-        self.username  = username
-        self.password  = password
+    mechanism: str
 
-class SASLUserPass(SASLParams):
-    def __init__(self, username: str, password: str):
-        super().__init__("USERPASS", username, password)
-class SASLSCRAM(SASLParams):
-    def __init__(self, username: str, password: str):
-        super().__init__("SCRAM", username, password)
+@dataclass
+class _SASLUserPass(SASLParams):
+    username:  str
+    password:  str
+
+class SASLUserPass(_SASLUserPass):
+    mechanism = "USERPASS"
+class SASLSCRAM(_SASLUserPass):
+    mechanism = "SCRAM"
 class SASLExternal(SASLParams):
-    def __init__(self):
-        super().__init__("EXTERNAL")
+    mechanism = "EXTERNAL"
 
 @dataclass
 class STSPolicy(object):

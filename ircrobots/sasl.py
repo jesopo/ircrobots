@@ -6,7 +6,7 @@ from ircstates.numerics import *
 
 from .matching import ResponseOr, Responses, Response, ANY
 from .contexts import ServerContext
-from .params   import SASLParams
+from .params   import SASLParams, SASLUserPass, SASLSCRAM, SASLExternal
 from .scram    import SCRAMContext
 
 SASL_SCRAM_MECHANISMS = [
@@ -47,11 +47,11 @@ def _b64db(s: str) -> bytes:
 
 class SASLContext(ServerContext):
     async def from_params(self, params: SASLParams) -> SASLResult:
-        if params.mechanism   == "USERPASS":
+        if isinstance(params, SASLUserPass):
             return await self.userpass(params.username, params.password)
-        elif params.mechanism == "SCRAM":
+        elif isinstance(params, SASLSCRAM):
             return await self.scram(params.username, params.password)
-        elif params.mechanism == "EXTERNAL":
+        elif isinstance(params, SASLExternal):
             return await self.external()
         else:
             raise SASLUnknownMechanismError(
