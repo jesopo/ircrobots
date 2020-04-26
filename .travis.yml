@@ -9,3 +9,4 @@ install:
 script:
   - pip3 freeze
   - mypy ircrobots examples --ignore-missing-imports
+  - python3 -m unittest test
