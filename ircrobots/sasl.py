@@ -7,7 +7,7 @@ from ircstates.numerics import *
 from .matching import ResponseOr, Responses, Response, ANY
 from .contexts import ServerContext
 from .params   import SASLParams, SASLUserPass, SASLSCRAM, SASLExternal
-from .scram    import SCRAMContext
+from .scram    import SCRAMContext, SCRAMAlgorithm
 
 SASL_SCRAM_MECHANISMS = [
     "SCRAM-SHA-512",
@@ -153,8 +153,15 @@ class SASLContext(ServerContext):
 
         return SASLResult.FAILURE
 
-    async def _scram(self, algo: str, username: str, password: str) -> str:
-        algo  = algo.replace("SCRAM-", "", 1)
+    async def _scram(self, algo_str: str,
+            username: str,
+            password: str) -> str:
+        algo_str_prep = algo_str.replace("SCRAM-", "", 1
+            ).replace("-", "").upper()
+        try:
+            algo = SCRAMAlgorithm(algo_str_prep)
+        except ValueError:
+            raise ValueError("Unknown SCRAM algorithm '%s'" % algo)
         scram = SCRAMContext(algo, username, password)
 
         client_first = _b64eb(scram.client_first())

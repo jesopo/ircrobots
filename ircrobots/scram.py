@@ -1,12 +1,18 @@
-import base64, enum, hashlib, hmac, os
+import base64, hashlib, hmac, os
+from enum import Enum
 from typing import Dict
 
 # IANA Hash Function Textual Names
 # https://tools.ietf.org/html/rfc5802#section-4
 # https://www.iana.org/assignments/hash-function-text-names/
 # MD2 has been removed as it's unacceptably weak
-ALGORITHMS = [
-    "MD5", "SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512"]
+class SCRAMAlgorithm(Enum):
+    MD5     = "MD5"
+    SHA_1   = "SHA-1"
+    SHA_224 = "SHA224"
+    SHA_256 = "SHA256"
+    SHA_384 = "SHA384"
+    SHA_512 = "SHA512"
 
 SCRAM_ERRORS = [
     "invalid-encoding",
@@ -30,7 +36,7 @@ def _scram_unescape(s: bytes) -> bytes:
 def _scram_xor(s1: bytes, s2: bytes) -> bytes:
     return bytes(a ^ b for a, b in zip(s1, s2))
 
-class SCRAMState(enum.Enum):
+class SCRAMState(Enum):
     NONE           = 0
     CLIENT_FIRST   = 1
     CLIENT_FINAL   = 2
@@ -42,11 +48,10 @@ class SCRAMError(Exception):
     pass
 
 class SCRAMContext(object):
-    def __init__(self, algo: str, username: str, password: str):
-        if not algo in ALGORITHMS:
-            raise ValueError("Unknown SCRAM algorithm '%s'" % algo)
-
-        self._algo = algo.replace("-", "") # SHA-1 -> SHA1
+    def __init__(self, algo: SCRAMAlgorithm,
+            username: str,
+            password: str):
+        self._algo     = algo
         self._username = username.encode("utf8")
         self._password = password.encode("utf8")
 
@@ -65,9 +70,9 @@ class SCRAMContext(object):
         return dict((piece[0], piece[1]) for piece in pieces)
 
     def _hmac(self, key: bytes, msg: bytes) -> bytes:
-        return hmac.new(key, msg, self._algo).digest()
+        return hmac.new(key, msg, self._algo.value).digest()
     def _hash(self, msg: bytes) -> bytes:
-        return hashlib.new(self._algo, msg).digest()
+        return hashlib.new(self._algo.value, msg).digest()
 
     def _constant_time_compare(self, b1: bytes, b2: bytes):
         return hmac.compare_digest(b1, b2)
@@ -113,8 +118,8 @@ class SCRAMContext(object):
         salt = base64.b64decode(pieces[b"s"]) # salt is b64encoded
         iterations = int(pieces[b"i"])
 
-        salted_password = hashlib.pbkdf2_hmac(self._algo, self._password,
-            salt, iterations, dklen=None)
+        salted_password = hashlib.pbkdf2_hmac(self._algo.value,
+            self._password, salt, iterations, dklen=None)
         self._salted_password = salted_password
 
         client_key = self._hmac(salted_password, b"Client Key")
