@@ -76,6 +76,7 @@ class IServer(Server):
     disconnected: bool
     params:       ConnectionParams
     desired_caps: Set[ICapability]
+    last_read:    float
 
     def send_raw(self, line: str, priority=SendPriority.DEFAULT
             ) -> Awaitable[SentLine]:

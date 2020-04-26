@@ -2,8 +2,10 @@ import asyncio
 from asyncio     import Future, PriorityQueue
 from typing      import Awaitable, Deque, Dict, List, Optional, Set, Tuple
 from collections import deque
+from time        import monotonic
 
 from asyncio_throttle   import Throttler
+from async_timeout      import timeout
 from ircstates          import Emit, Channel
 from ircstates.numerics import *
 from ircstates.server   import ServerDisconnectedException
@@ -23,6 +25,7 @@ from .interface import ITCPTransport, ITCPReader, ITCPWriter
 
 THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
+PING_TIMEOUT  = 60 # seconds
 
 class Server(IServer):
     _reader: ITCPReader
@@ -39,6 +42,8 @@ class Server(IServer):
             rate_limit=100, period=THROTTLE_TIME)
 
         self.sasl_state = SASLResult.NONE
+        self.last_read  = -1.0
+        self._ping_sent = False
 
         self._sent_count:  int = 0
         self._write_queue: PriorityQueue[SentLine] = PriorityQueue()
@@ -174,7 +179,21 @@ class Server(IServer):
             both = self._read_queue.popleft()
         else:
             while True:
-                data  = await self._reader.read(1024)
+
+                try:
+                    async with timeout(PING_TIMEOUT):
+                        data = await self._reader.read(1024)
+                except asyncio.exceptions.TimeoutError:
+                    if self._ping_sent:
+                        data = b"" # empty data means the socket disconnected
+                    else:
+                        self._ping_sent = True
+                        await self.send(build("PING", ["hello"]))
+                        continue
+
+                self.last_read  = monotonic()
+                self._ping_sent = False
+
                 try:
                     lines = self.recv(data)
                 except ServerDisconnectedException:
