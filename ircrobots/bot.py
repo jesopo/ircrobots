@@ -8,8 +8,6 @@ from .server    import ConnectionParams, Server
 from .transport import TCPTransport
 from .interface import IBot, IServer
 
-RECONNECT_DELAY = 10.0 # ten seconds reconnect
-
 class Bot(IBot):
     def __init__(self):
         self.servers: Dict[str, Server] = {}
@@ -20,8 +18,9 @@ class Bot(IBot):
         return Server(self, name)
     async def disconnected(self, server: IServer):
         if (server.name in self.servers and
+                server.params is not None and
                 server.disconnected):
-            await asyncio.sleep(RECONNECT_DELAY)
+            await asyncio.sleep(server.params.reconnect)
             await self.add_server(server.name, server.params)
     # /methods designed to be overridden
 

@@ -45,3 +45,5 @@ class ConnectionParams(object):
 
     sts:    Optional[STSPolicy]    = None
     resume: Optional[ResumePolicy] = None
+
+    reconnect: int = 10 # seconds
