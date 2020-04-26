@@ -182,7 +182,7 @@ class Server(IServer):
                 try:
                     async with timeout(PING_TIMEOUT):
                         data = await self._reader.read(1024)
-                except asyncio.exceptions.TimeoutError:
+                except asyncio.TimeoutError:
                     if ping_sent:
                         data = b"" # empty data means the socket disconnected
                     else:
