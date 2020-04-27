@@ -1,7 +1,8 @@
-from re           import compile
+from re           import compile as re_compile
 from typing       import Optional, Pattern
 from irctokens    import Hostmask
 from ..interface  import IMatchResponseParam, IMatchResponseHostmask, IServer
+from ..glob       import Glob, compile as glob_compile
 from .. import formatting
 
 class Any(IMatchResponseParam):
@@ -52,7 +53,7 @@ class Regex(IMatchResponseParam):
         self._pattern: Optional[Pattern] = None
     def match(self, server: IServer, arg: str) -> bool:
         if self._pattern is None:
-            self._pattern = compile(self._value)
+            self._pattern = re_compile(self._value)
         return bool(self._pattern.search(arg))
 
 class Nickname(IMatchResponseHostmask):
@@ -67,3 +68,12 @@ class Nickname(IMatchResponseHostmask):
         if self._folded is None:
             self._folded = server.casefold(self._nickname)
         return self._folded == server.casefold(hostmask.nickname)
+
+class Mask(IMatchResponseHostmask):
+    def __init__(self, mask: str):
+        self._mask = mask
+        self._compiled = Optional[Glob]
+    def match(self, server: IServer, hostmask: Hostmask):
+        if self._compiled is None:
+            self._compiled = glob_compile(self._mask)
+        return self._compiled.match(str(hostmask))

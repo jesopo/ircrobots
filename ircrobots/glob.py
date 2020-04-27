@@ -18,3 +18,37 @@ def _collapse(pattern: str) -> str:
             i   += 1
     return out
 
+def _match(pattern: str, s: str):
+    i, j = 0, 0
+
+    i_backup = -1
+    j_backup = -1
+    while j < len(s):
+        p = (pattern[i:] or [None])[0]
+
+        if p == "*":
+            i += 1
+            i_backup = i
+            j_backup = j
+
+        elif p in ["?", s[j]]:
+            i += 1
+            j += 1
+
+        else:
+            if i_backup == -1:
+                return False
+            else:
+                j_backup += 1
+                j = j_backup
+                i = i_backup
+
+    return i == len(pattern)
+
+class Glob(object):
+    def __init__(self, pattern: str):
+        self._pattern = pattern
+    def match(self, s: str) -> bool:
+        return _match(self._pattern, s)
+def compile(pattern: str):
+    return Glob(_collapse(pattern))
