@@ -3,7 +3,7 @@ from irctokens import build
 from ircstates.numerics import *
 
 from .contexts  import ServerContext
-from .matching  import Response, ResponseOr, ANY, Folded
+from .matching  import Response, ANY, Folded
 
 class WHOContext(ServerContext):
     async def ensure(self, channel: str):

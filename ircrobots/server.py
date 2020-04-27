@@ -1,6 +1,7 @@
 import asyncio
 from asyncio     import Future, PriorityQueue
-from typing      import Awaitable, Deque, Dict, List, Optional, Set, Tuple
+from typing      import (Awaitable, Deque, Dict, List, Optional, Set, Tuple,
+    Union)
 from collections import deque
 from time        import monotonic
 
@@ -222,12 +223,20 @@ class Server(IServer):
 
         return both
 
-    async def wait_for(self, response: IMatchResponse) -> Line:
+    async def wait_for(self,
+            response: Union[IMatchResponse, Set[IMatchResponse]]
+            ) -> Line:
+        response_obj: IMatchResponse
+        if isinstance(response, set):
+            response_obj = ResponseOr(*response)
+        else:
+            response_obj = response
+
         wait_for_fut = self._wait_for_fut
         if wait_for_fut is not None:
             self._wait_for_fut = None
 
-            our_wait_for = WaitFor(response)
+            our_wait_for = WaitFor(response_obj)
             wait_for_fut.set_result(our_wait_for)
             return await our_wait_for
         raise Exception()

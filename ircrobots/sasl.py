@@ -4,7 +4,7 @@ from base64    import b64decode, b64encode
 from irctokens import build
 from ircstates.numerics import *
 
-from .matching import ResponseOr, Responses, Response, ANY
+from .matching import Responses, Response, ANY
 from .contexts import ServerContext
 from .params   import SASLParams, SASLUserPass, SASLSCRAM, SASLExternal
 from .scram    import SCRAMContext, SCRAMAlgorithm
@@ -60,10 +60,10 @@ class SASLContext(ServerContext):
 
     async def external(self) -> SASLResult:
         await self.server.send(build("AUTHENTICATE", ["EXTERNAL"]))
-        line = await self.server.wait_for(ResponseOr(
+        line = await self.server.wait_for({
             AUTHENTICATE_ANY,
             NUMERICS_INITIAL
-        ))
+        })
 
         if line.command == "907":
             # we've done SASL already. cleanly abort
@@ -117,10 +117,10 @@ class SASLContext(ServerContext):
 
         while match:
             await self.server.send(build("AUTHENTICATE", [match[0]]))
-            line = await self.server.wait_for(ResponseOr(
+            line = await self.server.wait_for({
                 AUTHENTICATE_ANY,
                 NUMERICS_INITIAL
-            ))
+            })
 
             if line.command == "907":
                 # we've done SASL already. cleanly abort

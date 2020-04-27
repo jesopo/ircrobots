@@ -1,5 +1,5 @@
 from asyncio import Future
-from typing  import Awaitable, Iterable, List, Optional, Set, Tuple
+from typing  import Awaitable, Iterable, List, Optional, Set, Tuple, Union
 from enum    import IntEnum
 
 from ircstates import Server, Emit
@@ -85,7 +85,9 @@ class IServer(Server):
             ) -> Awaitable[SentLine]:
         pass
 
-    def wait_for(self, response: IMatchResponse) -> Awaitable[Line]:
+    def wait_for(self,
+            response: Union[IMatchResponse, Set[IMatchResponse]]
+            ) -> Awaitable[Line]:
         pass
 
     def set_throttle(self, rate: int, time: float):

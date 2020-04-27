@@ -5,7 +5,7 @@ from irctokens   import build
 from ircstates.server import ServerDisconnectedException
 
 from .contexts  import ServerContext
-from .matching  import Response, ResponseOr, ANY
+from .matching  import Response, ANY
 from .interface import ICapability
 from .params    import ConnectionParams, STSPolicy, ResumePolicy
 
@@ -108,10 +108,10 @@ class CAPContext(ServerContext):
             await self.server.send(build("CAP", ["REQ", " ".join(cap_names)]))
 
             while cap_names:
-                line = await self.server.wait_for(ResponseOr(
+                line = await self.server.wait_for({
                     Response("CAP", [ANY, "ACK"]),
                     Response("CAP", [ANY, "NAK"])
-                ))
+                })
 
                 current_caps = line.params[2].split(" ")
                 for cap in current_caps:
@@ -136,10 +136,10 @@ class CAPContext(ServerContext):
 
         if previous_policy is not None and not self.server.registered:
             await self.server.send(build("RESUME", [previous_policy.token]))
-            line = await self.server.wait_for(ResponseOr(
+            line = await self.server.wait_for({
                 Response("RESUME", ["SUCCESS"]),
                 Response("FAIL",   ["RESUME"])
-            ))
+            })
             if line.command == "RESUME":
                 raise HandshakeCancel()
 
