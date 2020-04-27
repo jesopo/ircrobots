@@ -67,10 +67,8 @@ class Nick(IMatchResponseHostmask):
     def __init__(self, nickname: str):
         self._nickname = nickname
         self._folded: Optional[str] = None
-
     def __repr__(self) -> str:
-        mask = f"{self._nickname}!*@*"
-        return f"Hostmask({mask!r})"
+        return f"Nick({self._nickname!r})"
     def match(self, server: IServer, hostmask: Hostmask):
         if self._folded is None:
             self._folded = server.casefold(self._nickname)
@@ -80,6 +78,8 @@ class Mask(IMatchResponseHostmask):
     def __init__(self, mask: str):
         self._mask = mask
         self._compiled = Optional[Glob]
+    def __repr__(self) -> str:
+        return f"Mask({self._mask!r})"
     def match(self, server: IServer, hostmask: Hostmask):
         if self._compiled is None:
             self._compiled = glob_compile(self._mask)
