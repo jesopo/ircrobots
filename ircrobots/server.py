@@ -295,6 +295,26 @@ class Server(IServer):
             return False
     # /CAP-related
 
+    def send_nick(self, new_nick: str) -> Awaitable[bool]:
+        fut = self.send(build("NICK", [new_nick]))
+        async def _assure() -> bool:
+            await fut
+            line = await self.wait_for({
+                Response("NICK", [Folded(new_nick)], source=SELF),
+                Responses([
+                    ERR_BANNICKCHANGE,
+                    ERR_NICKTOOFAST,
+                    ERR_CANTCHANGENICK
+                ], [ANY]),
+                Responses([
+                    ERR_NICKNAMEINUSE,
+                    ERR_ERRONEUSNICKNAME,
+                    ERR_UNAVAILRESOURCE
+                ], [ANY, Folded(new_nick)])
+            })
+            return line.command == "NICK"
+        return MaybeAwait(_assure)
+
     def send_join(self,
             name: str,
             key: Optional[str]=None
