@@ -16,7 +16,7 @@ from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
     CAP_LABEL, LABEL_TAG, resume_transmute)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
-from .matching  import ResponseOr, Responses, Response, ANY, Folded, Nickname
+from .matching  import ResponseOr, Responses, Response, ANY, SELF, Folded
 from .asyncs    import MaybeAwait, WaitFor
 from .struct    import Whois
 from .params    import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
@@ -312,7 +312,7 @@ class Server(IServer):
             line = await self.wait_for(Response(
                 "PART",
                 [ParamFolded(name)],
-                source=Nickname(self.nickname_lower)
+                source=SELF
             ))
             return
         return MaybeAwait(_assure)
