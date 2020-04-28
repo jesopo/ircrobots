@@ -16,7 +16,8 @@ from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
     CAP_LABEL, LABEL_TAG, resume_transmute)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
-from .matching  import ResponseOr, Responses, Response, ANY, SELF, Folded
+from .matching  import (ResponseOr, Responses, Response, ANY, SELF, MASK_SELF,
+    Folded)
 from .asyncs    import MaybeAwait, WaitFor
 from .struct    import Whois
 from .params    import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
@@ -300,7 +301,7 @@ class Server(IServer):
         async def _assure() -> bool:
             await fut
             line = await self.wait_for({
-                Response("NICK", [Folded(new_nick)], source=SELF),
+                Response("NICK", [Folded(new_nick)], source=MASK_SELF),
                 Responses([
                     ERR_BANNICKCHANGE,
                     ERR_NICKTOOFAST,
@@ -329,11 +330,10 @@ class Server(IServer):
         fut = self.send(build("PART", [name]))
 
         async def _assure():
-            line = await self.wait_for(Response(
-                "PART",
-                [ParamFolded(name)],
-                source=SELF
-            ))
+            await fut
+            line = await self.wait_for(
+                Response("PART", [Folded(name)], source=MASK_SELF)
+            )
             return
         return MaybeAwait(_assure)
 

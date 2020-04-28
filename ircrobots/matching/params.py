@@ -56,12 +56,19 @@ class Regex(IMatchResponseParam):
             self._pattern = re_compile(self._value)
         return bool(self._pattern.search(arg))
 
-class Self(IMatchResponseHostmask):
+class Self(IMatchResponseParam):
     def __repr__(self) -> str:
         return "Self()"
+    def match(self, server: IServer, arg: str) -> bool:
+        return server.casefold(arg) == server.nickname_lower
+SELF = Self()
+
+class MaskSelf(IMatchResponseHostmask):
+    def __repr__(self) -> str:
+        return "MaskSelf()"
     def match(self, server: IServer, hostmask: Hostmask):
         return server.casefold(hostmask.nickname) == server.nickname_lower
-SELF = Self()
+MASK_SELF = MaskSelf()
 
 class Nick(IMatchResponseHostmask):
     def __init__(self, nickname: str):
