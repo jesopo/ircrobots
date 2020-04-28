@@ -399,6 +399,20 @@ class Server(IServer):
             return channels
         return MaybeAwait(_assure)
 
+    def send_message(self, target: str, message: str
+            ) -> Awaitable[Optional[str]]:
+        fut = self.send(build("PRIVMSG", [target, message]))
+        async def _assure():
+            await fut
+            line = await self.wait_for(
+                Response("PRIVMSG", [Folded(target), ANY], source=MASK_SELF)
+            )
+            if line.command == "PRIVMSG":
+                return line.params[1]
+            else:
+                return None
+        return MaybeAwait(_assure)
+
     def send_whois(self, target: str) -> Awaitable[Whois]:
         folded = self.casefold(target)
         fut = self.send(build("WHOIS", [target, target]))
