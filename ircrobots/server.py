@@ -29,6 +29,18 @@ THROTTLE_RATE = 4 # lines
 THROTTLE_TIME = 2 # seconds
 PING_TIMEOUT  = 60 # seconds
 
+JOIN_ERR_FIRST = [
+    ERR_NOSUCHCHANNEL,
+    ERR_BADCHANNAME,
+    ERR_UNAVAILRESOURCE,
+    ERR_TOOMANYCHANNELS,
+    ERR_BANNEDFROMCHAN,
+    ERR_INVITEONLYCHAN,
+    ERR_BADCHANNELKEY,
+    ERR_NEEDREGGEDNICK,
+    ERR_THROTTLE
+]
+
 class Server(IServer):
     _reader: ITCPReader
     _writer: ITCPWriter
@@ -355,14 +367,34 @@ class Server(IServer):
             channels: List[Channel] = []
 
             while folded_names:
-                line = await self.wait_for(
-                    Response(RPL_CHANNELMODEIS, [ANY, ANY])
-                )
+                line = await self.wait_for({
+                    Response(RPL_CHANNELMODEIS, [ANY, ANY]),
+                    Responses(JOIN_ERR_FIRST,   [ANY, ANY]),
+                    Response(ERR_USERONCHANNEL, [ANY, SELF, ANY]),
+                    Response(ERR_LINKCHANNEL,   [ANY, ANY, ANY])
+                })
 
-                folded = self.casefold(line.params[1])
-                if folded in folded_names:
-                    folded_names.remove(folded)
-                    channels.append(self.channels[folded])
+                chan: Optional[str] = None
+                if line.command == RPL_CHANNELMODEIS:
+                    chan = line.params[1]
+                elif line.command in JOIN_ERR_FIRST:
+                    chan = line.params[1]
+                elif line.command == ERR_USERONCHANNEL:
+                    chan = line.params[2]
+                elif line.command == ERR_LINKCHANNEL:
+                    #XXX i dont like this
+                    chan = line.params[2]
+                    await self.wait_for(
+                        Response(RPL_CHANNELMODEIS, [ANY, Folded(chan)])
+                    )
+                    channels.append(self.channels[self.casefold(chan)])
+                    continue
+
+                if chan is not None:
+                    folded = self.casefold(chan)
+                    if folded in folded_names:
+                        folded_names.remove(folded)
+                        channels.append(self.channels[folded])
 
             return channels
         return MaybeAwait(_assure)
