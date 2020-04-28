@@ -7,13 +7,11 @@ from .matching  import Response, ANY, Folded
 
 class WHOContext(ServerContext):
     async def ensure(self, channel: str):
-        folded = self.server.casefold(channel)
-
         if self.server.isupport.whox:
             await self.server.send(self.server.prepare_whox(channel))
         else:
             await self.server.send(build("WHO", [channel]))
 
         line = await self.server.wait_for(
-            Response(RPL_ENDOFWHO, [ANY, Folded(folded)])
+            Response(RPL_ENDOFWHO, [ANY, Folded(channel)])
         )
