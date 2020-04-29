@@ -228,7 +228,7 @@ class Server(IServer):
             return None, None
 
     async def _read_lines(self):
-        waited_reads: List[Tuple[Line, Optional[Emit]]] = []
+        waited_reads: Deque[Tuple[Line, Optional[Emit]]] = deque()
         wait_for:     Optional[WaitFor]   = None
         wait_for_aw:  Optional[Awaitable] = None
 
@@ -252,7 +252,7 @@ class Server(IServer):
                     await _line()
 
                 while waited_reads:
-                    new_line, new_emit = waited_reads.pop(0)
+                    new_line, new_emit = waited_reads.popleft()
                     line_aw = self._on_read(new_line, new_emit)
                     wait_for, wait_for_aw = await self._line_or_wait(line_aw)
                     if wait_for is not None:
