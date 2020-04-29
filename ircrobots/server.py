@@ -233,21 +233,25 @@ class Server(IServer):
         wait_for:     Optional[WaitFor]   = None
         wait_for_aw:  Optional[Awaitable] = None
 
-        while True:
-            if not waited_reads or wait_for is not None:
-                both = await self._next_line()
-                waited_reads.append(both)
-                line, emit = both
-                self.line_preread(line)
+        async def _line() -> Tuple[Line, Optional[Emit]]:
+            both = await self._next_line()
+            waited_reads.append(both)
+            line, emit = both
+            self.line_preread(line)
+            return both
 
+        while True:
             if wait_for is not None:
-                line, emit = waited_reads[-1]
+                line, emit = await _line()
                 if wait_for.response.match(self, line):
                     wait_for.resolve(line)
 
                     wait_for, wait_for_aw = await self._line_or_wait(
                         wait_for_aw)
             else:
+                if not waited_reads:
+                    await _line()
+
                 while waited_reads:
                     new_line, new_emit = waited_reads.pop(0)
                     line_aw = self._on_read(new_line, new_emit)
