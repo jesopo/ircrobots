@@ -103,6 +103,10 @@ class IServer(Server):
     async def disconnect(self):
         pass
 
+    def line_preread(self, line: Line):
+        pass
+    def line_presend(self, line: Line):
+        pass
     async def line_read(self, line: Line):
         pass
     async def line_send(self, line: Line):
@@ -110,9 +114,6 @@ class IServer(Server):
     async def sts_policy(self, sts: STSPolicy):
         pass
     async def resume_policy(self, resume: ResumePolicy):
-        pass
-
-    async def next_line(self) -> Optional[Tuple[Line, Optional[Emit]]]:
         pass
 
     def cap_agreed(self, capability: ICapability) -> bool:

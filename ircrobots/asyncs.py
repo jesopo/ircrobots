@@ -2,6 +2,7 @@ from asyncio   import Future
 from irctokens import Line
 from typing    import Any, Awaitable, Callable, Generator, Generic, TypeVar
 from .matching import IMatchResponse
+from .interface import IServer
 
 TEvent = TypeVar("TEvent")
 class MaybeAwait(Generic[TEvent]):
@@ -19,6 +20,9 @@ class WaitFor(object):
 
     def __await__(self) -> Generator[Any, None, Line]:
         return self._fut.__await__()
+
+    def match(self, server: IServer, line: Line):
+        return self.response.match(server, line)
 
     def resolve(self, line: Line):
         self._fut.set_result(line)

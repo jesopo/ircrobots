@@ -37,21 +37,8 @@ class Bot(IBot):
 
     async def _run_server(self, server: Server):
         async with anyio.create_task_group() as tg:
-            async def _read():
-                while not tg.cancel_scope.cancel_called:
-                    try:
-                        both = await server.next_line()
-                    except ServerDisconnectedException:
-                        break
-                await tg.cancel_scope.cancel()
-
-            async def _write():
-                while not tg.cancel_scope.cancel_called:
-                    lines = await server._write_lines()
-                await tg.cancel_scope.cancel()
-
-            await tg.spawn(_write)
-            await tg.spawn(_read)
+            await tg.spawn(server._read_lines)
+            await tg.spawn(server._send_lines)
 
         await self.disconnected(server)
 
