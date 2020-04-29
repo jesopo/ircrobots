@@ -64,7 +64,6 @@ class Server(IServer):
 
         self._read_queue:  Deque[Tuple[Line, Optional[Emit]]] = deque()
 
-        self._wait_for:     List[Tuple[Awaitable, WaitFor]] = []
         self._wait_for_fut: Optional[Future[WaitFor]] = None
 
     def hostmask(self) -> str:
