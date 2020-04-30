@@ -14,15 +14,23 @@ class MaybeAwait(Generic[TEvent]):
         return coro.__await__()
 
 class WaitFor(object):
-    def __init__(self, response: IMatchResponse):
-        self.response = response
-        self._fut: "Future[Line]" = Future()
+    def __init__(self,
+            wait_fut: "Future[WaitFor]",
+            response: IMatchResponse):
+        self._wait_fut = wait_fut
+        self.response  = response
+        self.deferred  = False
+        self._our_fut: "Future[Line]" = Future()
 
     def __await__(self) -> Generator[Any, None, Line]:
-        return self._fut.__await__()
+        self._wait_fut.set_result(self)
+        return self._our_fut.__await__()
+    async def defer(self):
+        self.deferred = True
+        await self
 
     def match(self, server: IServer, line: Line):
         return self.response.match(server, line)
 
     def resolve(self, line: Line):
-        self._fut.set_result(line)
+        self._our_fut.set_result(line)

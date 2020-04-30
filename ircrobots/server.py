@@ -258,9 +258,9 @@ class Server(IServer):
                     if wait_for is not None:
                         break
 
-    async def wait_for(self,
+    def wait_for(self,
             response: Union[IMatchResponse, Set[IMatchResponse]]
-            ) -> Line:
+            ) -> Awaitable[Line]:
         response_obj: IMatchResponse
         if isinstance(response, set):
             response_obj = ResponseOr(*response)
@@ -270,10 +270,8 @@ class Server(IServer):
         wait_for_fut = self._wait_for_fut
         if wait_for_fut is not None:
             self._wait_for_fut = None
-
-            our_wait_for = WaitFor(response_obj)
-            wait_for_fut.set_result(our_wait_for)
-            return await our_wait_for
+            our_wait_for = WaitFor(wait_for_fut, response_obj)
+            return our_wait_for
         raise Exception()
 
     async def _on_send_line(self, line: Line):
