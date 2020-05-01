@@ -27,7 +27,7 @@ class WaitFor(object):
         return self._our_fut.__await__()
     async def defer(self):
         self.deferred = True
-        await self
+        return await self
 
     def match(self, server: IServer, line: Line):
         return self.response.match(server, line)
