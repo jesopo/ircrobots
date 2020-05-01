@@ -446,6 +446,7 @@ class Server(IServer):
                     RPL_WHOISSERVER,
                     RPL_WHOISOPERATOR,
                     RPL_WHOISIDLE,
+                    RPL_WHOISCHANNELS,
                     RPL_WHOISHOST,
                     RPL_WHOISACCOUNT,
                     RPL_WHOISSECURE,
@@ -459,6 +460,16 @@ class Server(IServer):
                     obj.signon = int(signon)
                 elif line.command == RPL_WHOISACCOUNT:
                     obj.account = line.params[2]
+                elif line.command == RPL_WHOISCHANNELS:
+                    channels = filter(bool, line.params[2].split(" "))
+                    for i, channel in channels:
+                        while channel[0] in self.isupport.prefix.prefixes:
+                            channel = channel[1:]
+                        channels[i] = channel
+
+                    if obj.channels is None:
+                        obj.channels = []
+                    obj.channels += channels
                 elif line.command == RPL_ENDOFWHOIS:
                     return obj
         return MaybeAwait(_assure)
