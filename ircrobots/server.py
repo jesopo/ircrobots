@@ -13,7 +13,7 @@ from ircstates.server   import ServerDisconnectedException
 from irctokens          import build, Line, tokenise
 
 from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
-    CAP_LABEL, LABEL_TAG, resume_transmute)
+    CAP_LABEL, LABEL_TAG_MAP, resume_transmute)
 from .sasl      import SASLContext, SASLResult
 from .join_info import WHOContext
 from .matching  import (ResponseOr, Responses, Response, ANY, SELF, MASK_SELF,
@@ -85,7 +85,7 @@ class Server(IServer):
 
         label = self.cap_available(CAP_LABEL)
         if not label is None:
-            tag = LABEL_TAG[label]
+            tag = LABEL_TAG_MAP[label]
             if line.tags is None or not tag in line.tags:
                 if line.tags is None:
                     line.tags = {}
@@ -259,8 +259,10 @@ class Server(IServer):
                         break
 
     def wait_for(self,
-            response: Union[IMatchResponse, Set[IMatchResponse]]
+            response:  Union[IMatchResponse, Set[IMatchResponse]],
+            sent_line: Optional[SentLine]=None
             ) -> Awaitable[Line]:
+
         response_obj: IMatchResponse
         if isinstance(response, set):
             response_obj = ResponseOr(*response)
@@ -270,7 +272,12 @@ class Server(IServer):
         wait_for_fut = self._wait_for_fut
         if wait_for_fut is not None:
             self._wait_for_fut = None
-            our_wait_for = WaitFor(wait_for_fut, response_obj)
+
+            label: Optional[str] = None
+            if sent_line is not None:
+                label = str(sent_line.id)
+
+            our_wait_for = WaitFor(wait_for_fut, response_obj, label)
             return our_wait_for
         raise Exception()
 

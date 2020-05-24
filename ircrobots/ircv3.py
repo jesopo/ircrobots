@@ -40,13 +40,36 @@ class Capability(ICapability):
             alias=self.alias,
             depends_on=self.depends_on[:])
 
+class MessageTag(object):
+    def __init__(self,
+            name: Optional[str],
+            draft_name: Optional[str]=None):
+        self.name  = name
+        self.draft = draft_name
+        self._tags = [self.name, self.draft]
+
+    def available(self, tags: Iterable[str]) -> Optional[str]:
+        for tag in self._tags:
+            if tag is not None and tag in tags:
+                return tag
+        else:
+            return None
+
+    def get(self, tags: Dict[str, str]) -> Optional[str]:
+        name = self.available(tags)
+        if name is not None:
+            return tags[name]
+        else:
+            return None
+
 CAP_SASL   = Capability("sasl")
 CAP_ECHO   = Capability("echo-message")
-CAP_LABEL  = Capability("labeled-response", "draft/labeled-response-0.2")
 CAP_STS    = Capability("sts", "draft/sts")
 CAP_RESUME = Capability(None, "draft/resume-0.5", alias="resume")
 
-LABEL_TAG = {
+CAP_LABEL  = Capability("labeled-response", "draft/labeled-response-0.2")
+TAG_LABEL  = MessageTag("label", "draft/label")
+LABEL_TAG_MAP = {
     "draft/labeled-response-0.2": "draft/label",
     "labeled-response": "label"
 }
