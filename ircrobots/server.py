@@ -468,8 +468,8 @@ class Server(IServer):
                 elif line.command == RPL_WHOISACCOUNT:
                     obj.account = line.params[2]
                 elif line.command == RPL_WHOISCHANNELS:
-                    channels = filter(bool, line.params[2].split(" "))
-                    for i, channel in channels:
+                    channels = list(filter(bool, line.params[2].split(" ")))
+                    for i, channel in enumerate(channels):
                         while channel[0] in self.isupport.prefix.prefixes:
                             channel = channel[1:]
                         channels[i] = channel
