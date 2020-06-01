@@ -1,7 +1,8 @@
 from re           import compile as re_compile
-from typing       import Optional, Pattern
+from typing       import Optional, Pattern, Union
 from irctokens    import Hostmask
-from ..interface  import IMatchResponseParam, IMatchResponseHostmask, IServer
+from ..interface  import (IMatchResponseParam, IMatchResponseValueParam,
+    IMatchResponseHostmask, IServer)
 from ..glob       import Glob, compile as glob_compile
 from .. import formatting
 
@@ -12,13 +13,31 @@ class Any(IMatchResponseParam):
         return True
 ANY = Any()
 
-class Literal(IMatchResponseParam):
+# NOT
+# FORMAT FOLD
+# REGEX
+# LITERAL
+
+class Literal(IMatchResponseValueParam):
     def __init__(self, value: str):
         self._value = value
     def __repr__(self) -> str:
         return f"{self._value!r}"
+
+    def value(self, server: IServer) -> str:
+        return self._value
+    def set_value(self, value: str):
+        self._value = value
     def match(self, server: IServer, arg: str) -> bool:
         return arg == self._value
+
+TYPE_MAYBELIT =       Union[str, IMatchResponseParam]
+TYPE_MAYBELIT_VALUE = Union[str, IMatchResponseValueParam]
+def _assure_lit(value: TYPE_MAYBELIT_VALUE) -> IMatchResponseValueParam:
+    if isinstance(value, str):
+        return Literal(value)
+    else:
+        return value
 
 class Not(IMatchResponseParam):
     def __init__(self, param: IMatchResponseParam):
@@ -28,24 +47,37 @@ class Not(IMatchResponseParam):
     def match(self, server: IServer, arg: str) -> bool:
         return not self._param.match(server, arg)
 
-class Folded(IMatchResponseParam):
-    def __init__(self, value: str):
-        self._value = value
-        self._folded: Optional[str] = None
+class ParamValuePassthrough(IMatchResponseValueParam):
+    _value: IMatchResponseValueParam
+    def value(self, server: IServer):
+        return self._value.value(server)
+    def set_value(self, value: str):
+        self._value.set_value(value)
+
+class Folded(ParamValuePassthrough):
+    def __init__(self, value: TYPE_MAYBELIT_VALUE):
+        self._value = _assure_lit(value)
+        self._folded = False
     def __repr__(self) -> str:
         return f"Folded({self._value!r})"
     def match(self, server: IServer, arg: str) -> bool:
-        if self._folded is None:
-            self._folded = server.casefold(self._value)
-        return self._folded == server.casefold(arg)
+        if not self._folded:
+            value  = self.value(server)
+            folded = server.casefold(value)
+            self.set_value(folded)
+            self._folded = True
 
-class Formatless(Literal):
+        return self._value.match(server, server.casefold(arg))
+
+class Formatless(IMatchResponseParam):
+    def __init__(self, value: TYPE_MAYBELIT_VALUE):
+        self._value = _assure_lit(value)
     def __repr__(self) -> str:
         brepr = super().__repr__()
         return f"Formatless({brepr})"
     def match(self, server: IServer, arg: str) -> bool:
         strip = formatting.strip(arg)
-        return super().match(server, strip)
+        return self._value.match(server, strip)
 
 class Regex(IMatchResponseParam):
     def __init__(self, value: str):

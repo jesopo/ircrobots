@@ -67,6 +67,11 @@ class IMatchResponse(object):
 class IMatchResponseParam(object):
     def match(self, server: "IServer", arg: str) -> bool:
         pass
+class IMatchResponseValueParam(IMatchResponseParam):
+    def value(self, server: "IServer"):
+        pass
+    def set_value(self, value: str):
+        pass
 class IMatchResponseHostmask(object):
     def match(self, server: "IServer", hostmask: Hostmask) -> bool:
         pass
