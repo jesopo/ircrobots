@@ -116,7 +116,7 @@ class Nick(IMatchResponseHostmask):
 class Mask(IMatchResponseHostmask):
     def __init__(self, mask: str):
         self._mask = mask
-        self._compiled = Optional[Glob]
+        self._compiled: Optional[Glob]
     def __repr__(self) -> str:
         return f"Mask({self._mask!r})"
     def match(self, server: IServer, hostmask: Hostmask):
