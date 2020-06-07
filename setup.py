@@ -16,7 +16,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jesopo/ircrobots",
-    packages=setuptools.find_packages(),
+    packages=["ircrobots"],
     package_data={"ircrobots": ["py.typed"]},
     classifiers=[
         "Programming Language :: Python :: 3",
