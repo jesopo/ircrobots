@@ -449,7 +449,7 @@ class Server(IServer):
             obj = Whois()
             while True:
                 line = await self.wait_for(Responses([
-                    ERR_NOSUCHUSER,
+                    ERR_NOSUCHNICK,
                     RPL_WHOISUSER,
                     RPL_WHOISSERVER,
                     RPL_WHOISOPERATOR,
