@@ -439,17 +439,23 @@ class Server(IServer):
                 return None
         return MaybeAwait(_assure)
 
-    def send_whois(self, target: str) -> Awaitable[Optional[Whois]]:
-        folded = self.casefold(target)
-        fut = self.send(build("WHOIS", [target, target]))
+    def send_whois(self,
+            target: str,
+            remote: bool=False
+            ) -> Awaitable[Optional[Whois]]:
+        args = [target]
+        if remote:
+            args.append(target)
 
+        fut = self.send(build("WHOIS", args))
         async def _assure():
             await fut
-            params = [ANY, Folded(folded)]
+            params = [ANY, Folded(self.casefold(target))]
             obj = Whois()
             while True:
                 line = await self.wait_for(Responses([
                     ERR_NOSUCHNICK,
+                    ERR_NOSUCHSERVER,
                     RPL_WHOISUSER,
                     RPL_WHOISSERVER,
                     RPL_WHOISOPERATOR,
@@ -460,7 +466,7 @@ class Server(IServer):
                     RPL_WHOISSECURE,
                     RPL_ENDOFWHOIS
                 ], params))
-                if   line.command == ERR_NOSUCHNICK:
+                if   line.command in [ERR_NOSUCHNICK, ERR_NOSUCHSERVER]:
                     return None
                 elif line.command == RPL_WHOISUSER:
                     nick, user, host, _, real = line.params[1:]
