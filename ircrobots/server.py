@@ -460,7 +460,7 @@ class Server(IServer):
                     RPL_WHOISSECURE,
                     RPL_ENDOFWHOIS
                 ], params))
-                if   line.command == ERR_NOSUCHUSER:
+                if   line.command == ERR_NOSUCHNICK:
                     return None
                 elif line.command == RPL_WHOISUSER:
                     nick, user, host, _, real = line.params[1:]
