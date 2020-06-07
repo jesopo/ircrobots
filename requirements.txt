@@ -1,6 +1,6 @@
 anyio            ==1.3.0
 asyncio-throttle ==1.0.1
 dataclasses      ==0.6
-ircstates        ==0.9.14
+ircstates        ==0.9.15
 async_stagger    ==0.3.0
 async_timeout    ==3.0.1
