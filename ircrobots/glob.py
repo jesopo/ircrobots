@@ -50,5 +50,5 @@ class Glob(object):
         self._pattern = pattern
     def match(self, s: str) -> bool:
         return _match(self._pattern, s)
-def compile(pattern: str):
+def compile(pattern: str) -> Glob:
     return Glob(_collapse(pattern))
