@@ -11,9 +11,11 @@ class Whois(object):
     signon:      Optional[int]       = None
     idle:        Optional[int]       = None
 
-    username:    Optional[str]       = None
-    hostname:    Optional[str]       = None
-    realname:    Optional[str]       = None
-    account:     Optional[str]       = None
-
     channels:    Optional[List[str]] = None
+
+    nickname: str = ""
+    username: str = ""
+    hostname: str = ""
+    realname: str = ""
+    account:  Optional[str] = None
+
