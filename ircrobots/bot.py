@@ -37,7 +37,10 @@ class Bot(IBot):
 
     async def _run_server(self, server: Server):
         async with anyio.create_task_group() as tg:
-            await tg.spawn(server._read_lines)
+            async def _read():
+                while True:
+                    await server._read_lines()
+            await tg.spawn(_read)
             await tg.spawn(server._send_lines)
 
         await self.disconnected(server)

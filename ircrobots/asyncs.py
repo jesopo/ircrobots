@@ -17,21 +17,16 @@ class MaybeAwait(Generic[TEvent]):
 
 class WaitFor(object):
     def __init__(self,
-            wait_fut: "Future[WaitFor]",
-            response: IMatchResponse,
-            label:    Optional[str]):
-        self._wait_fut = wait_fut
+            response: IMatchResponse):
         self.response  = response
-        self._label    = label
-        self.deferred  = False
+        self._label:   Optional[str] = None
         self._our_fut: "Future[Line]" = Future()
 
     def __await__(self) -> Generator[Any, None, Line]:
-        self._wait_fut.set_result(self)
         return self._our_fut.__await__()
-    async def defer(self):
-        self.deferred = True
-        return await self
+
+    def with_label(self, label: str):
+        self._label = label
 
     def match(self, server: IServer, line: Line):
         if (self._label is not None and

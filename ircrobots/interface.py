@@ -46,7 +46,7 @@ class SentLine(object):
         self.id             = id
         self.priority       = priority
         self.line           = line
-        self.future: Future = Future()
+        self.future: "Future[SentLine]" = Future()
 
     def __lt__(self, other: "SentLine") -> bool:
         return self.priority < other.priority
