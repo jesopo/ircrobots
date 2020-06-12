@@ -1,4 +1,4 @@
-from typing      import List, Optional, Union
+from typing      import List, Optional, Sequence, Union
 from irctokens   import Line
 from ..interface import (IServer, IMatchResponse, IMatchResponseParam,
     IMatchResponseHostmask)
@@ -7,13 +7,13 @@ from .params     import *
 TYPE_PARAM = Union[str, IMatchResponseParam]
 class Responses(IMatchResponse):
     def __init__(self,
-            commands: List[str],
-            params:   List[TYPE_PARAM]=[],
+            commands: Sequence[str],
+            params:   Sequence[TYPE_PARAM]=[],
             source:   Optional[IMatchResponseHostmask]=None):
         self._commands = commands
         self._source   = source
 
-        self._params: List[IMatchResponseParam] = []
+        self._params: Sequence[IMatchResponseParam] = []
         for param in params:
             if isinstance(param, str):
                 self._params.append(Literal(param))
@@ -43,7 +43,7 @@ class Responses(IMatchResponse):
 class Response(Responses):
     def __init__(self,
             command: str,
-            params:  List[TYPE_PARAM]=[],
+            params:  Sequence[TYPE_PARAM]=[],
             source:  Optional[IMatchResponseHostmask]=None):
         super().__init__([command], params, source=source)
 
