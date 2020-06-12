@@ -7,7 +7,7 @@ from time        import monotonic
 
 from asyncio_throttle   import Throttler
 from async_timeout      import timeout
-from ircstates          import Emit, Channel
+from ircstates          import Emit, Channel, ChannelUser
 from ircstates.numerics import *
 from ircstates.server   import ServerDisconnectedException
 from irctokens          import build, Line, tokenise
@@ -448,7 +448,7 @@ class Server(IServer):
             args.append(target)
 
         fut = self.send(build("WHOIS", args))
-        async def _assure():
+        async def _assure() -> Optional[Whois]:
             await fut
             params = [ANY, Folded(self.casefold(target))]
             obj = Whois()
@@ -475,20 +475,29 @@ class Server(IServer):
                     obj.hostname = host
                     obj.realname = real
                 elif line.command == RPL_WHOISIDLE:
-                    obj.idle, signon, _ = line.params[2:]
+                    idle, signon, _ = line.params[2:]
+                    obj.idle   = int(idle)
                     obj.signon = int(signon)
                 elif line.command == RPL_WHOISACCOUNT:
                     obj.account = line.params[2]
                 elif line.command == RPL_WHOISCHANNELS:
                     channels = list(filter(bool, line.params[2].split(" ")))
-                    for i, channel in enumerate(channels):
-                        while channel[0] in self.isupport.prefix.prefixes:
-                            channel = channel[1:]
-                        channels[i] = channel
-
                     if obj.channels is None:
                         obj.channels = []
-                    obj.channels += channels
+
+                    for i, channel in enumerate(channels):
+                        symbols = ""
+                        while channel[0] in self.isupport.prefix.prefixes:
+                            symbols += channel[0]
+                            channel =  channel[1:]
+
+                        channel_user = ChannelUser()
+                        for symbol in symbols:
+                            mode = self.isupport.prefix.from_prefix(symbol)
+                            if mode is not None:
+                                channel_user.modes.append(mode)
+
+                        obj.channels.append(channel_user)
                 elif line.command == RPL_ENDOFWHOIS:
                     return obj
         return MaybeAwait(_assure)
