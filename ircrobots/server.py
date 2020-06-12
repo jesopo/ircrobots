@@ -216,6 +216,7 @@ class Server(IServer):
 
         done, pend = await asyncio.wait([line_aw, wait_for_fut],
             return_when=asyncio.FIRST_COMPLETED)
+        self._wait_for_fut = None
 
         if wait_for_fut.done():
             new_line_aw = list(pend)[0]
