@@ -15,7 +15,6 @@ from irctokens          import build, Line, tokenise
 from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
     CAP_LABEL, LABEL_TAG_MAP, resume_transmute)
 from .sasl      import SASLContext, SASLResult
-from .join_info import WHOContext
 from .matching  import (ResponseOr, Responses, Response, ANY, SELF, MASK_SELF,
     Folded)
 from .asyncs    import MaybeAwait, WaitFor
@@ -66,6 +65,8 @@ class Server(IServer):
 
         self._wait_fors: List[Tuple[WaitFor, Optional[Awaitable]]] = []
         self._wait_for_fut: Optional[Future[WaitFor]] = None
+
+        self._pending_who: Deque[str] = deque()
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -179,9 +180,24 @@ class Server(IServer):
             elif emit.command == "JOIN":
                 if emit.self and not emit.channel is None:
                     await self.send(build("MODE", [emit.channel.name]))
-                    await WHOContext(self).ensure(emit.channel.name)
+
+                    self._pending_who.append(emit.channel.name)
+                    if len(self._pending_who) == 1:
+                        await self._serial_who()
 
         await self.line_read(line)
+
+    async def _serial_who(self):
+        while self._pending_who:
+            next = self._pending_who.popleft()
+            if self.isupport.whox:
+                await self.send(self.prepare_whox(next))
+            else:
+                await self.send(build("WHO", [next]))
+
+            end = Response(RPL_ENDOFWHO, [ANY, Folded(next)])
+            line = await self.wait_for(end)
+
 
     async def _next_lines(self) -> List[Tuple[Line, Optional[Emit]]]:
         ping_sent = False
