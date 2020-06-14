@@ -161,7 +161,7 @@ class SASLContext(ServerContext):
         try:
             algo = SCRAMAlgorithm(algo_str_prep)
         except ValueError:
-            raise ValueError("Unknown SCRAM algorithm '%s'" % algo)
+            raise ValueError("Unknown SCRAM algorithm '%s'" % algo_str_prep)
         scram = SCRAMContext(algo, username, password)
 
         client_first = _b64eb(scram.client_first())

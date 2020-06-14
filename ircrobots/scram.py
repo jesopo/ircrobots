@@ -8,7 +8,7 @@ from typing import Dict
 # MD2 has been removed as it's unacceptably weak
 class SCRAMAlgorithm(Enum):
     MD5     = "MD5"
-    SHA_1   = "SHA-1"
+    SHA_1   = "SHA1"
     SHA_224 = "SHA224"
     SHA_256 = "SHA256"
     SHA_384 = "SHA384"
