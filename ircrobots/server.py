@@ -24,9 +24,10 @@ from .interface import (IBot, ICapability, IServer, SentLine, SendPriority,
     IMatchResponse)
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
 
-THROTTLE_RATE = 4 # lines
-THROTTLE_TIME = 2 # seconds
+THROTTLE_RATE = 4  # lines
+THROTTLE_TIME = 2  # seconds
 PING_TIMEOUT  = 60 # seconds
+WAIT_TIMEOUT  = 20 # seconds
 
 JOIN_ERR_FIRST = [
     ERR_NOSUCHCHANNEL,
@@ -287,7 +288,8 @@ class Server(IServer):
             label = str(sent_line.id)
             our_wait_for.with_label(label)
 
-        return (await our_wait_for)
+        async with timeout(WAIT_TIMEOUT):
+            return (await our_wait_for)
 
     async def _on_send_line(self, line: Line):
         if (line.command == "PRIVMSG" and
