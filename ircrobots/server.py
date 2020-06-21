@@ -66,7 +66,7 @@ class Server(IServer):
         self._read_queue:  Deque[Tuple[Line, Optional[Emit]]] = deque()
 
         self._wait_fors: List[WaitFor] = []
-        self._wait_for_fut: Dict[str, Future[bool]] = {}
+        self._wait_for_fut: Dict[asyncio.Task, Future[bool]] = {}
 
         self._pending_who: Deque[str] = deque()
 
@@ -230,13 +230,12 @@ class Server(IServer):
     async def _line_or_wait(self,
             line_aw: asyncio.Task
             ) -> Optional[Awaitable]:
-        task_name = line_aw.get_name()
         wait_for_fut: Future[bool] = Future()
-        self._wait_for_fut[task_name] = wait_for_fut
+        self._wait_for_fut[line_aw] = wait_for_fut
 
         done, pend = await asyncio.wait([line_aw, wait_for_fut],
             return_when=asyncio.FIRST_COMPLETED)
-        del self._wait_for_fut[task_name]
+        del self._wait_for_fut[line_aw]
 
         if wait_for_fut.done():
             new_line_aw = list(pend)[0]
@@ -280,11 +279,9 @@ class Server(IServer):
         self._wait_fors.append(our_wait_for)
 
         cur_task = asyncio.current_task()
-        if cur_task is not None:
-            cur_task_name = cur_task.get_name()
-            if cur_task_name in self._wait_for_fut:
-                wait_for_fut = self._wait_for_fut[cur_task_name]
-                wait_for_fut.set_result(True)
+        if cur_task is not None and cur_task in self._wait_for_fut:
+            wait_for_fut = self._wait_for_fut[cur_task]
+            wait_for_fut.set_result(True)
 
         if sent_aw is not None:
             sent_line = await sent_aw
