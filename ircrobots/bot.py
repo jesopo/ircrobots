@@ -39,7 +39,8 @@ class Bot(IBot):
         async with anyio.create_task_group() as tg:
             async def _read():
                 while True:
-                    await server._read_lines()
+                    async for line, emit in server._read_lines():
+                        pass
             await tg.spawn(_read)
             await tg.spawn(server._send_lines)
 
