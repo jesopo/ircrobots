@@ -213,10 +213,10 @@ class Server(IServer):
                 else:
                     ping_sent = True
                     await self.send(build("PING", ["hello"]))
-                continue
+                    continue
 
-            self.last_read  = monotonic()
-            ping_sent       = False
+            self.last_read = monotonic()
+            ping_sent      = False
 
             try:
                 lines = self.recv(data)
