@@ -266,7 +266,8 @@ class Server(IServer):
 
     async def wait_for(self,
             response: Union[IMatchResponse, Set[IMatchResponse]],
-            sent_aw:  Optional[Awaitable[SentLine]]=None
+            sent_aw:  Optional[Awaitable[SentLine]]=None,
+            wtimeout: float=WAIT_TIMEOUT
             ) -> Line:
 
         response_obj: IMatchResponse
@@ -292,7 +293,7 @@ class Server(IServer):
             return (await our_wait_for)
 
     async def _on_send_line(self, line: Line):
-        if (line.command == "PRIVMSG" and
+        if (line.command in ["PRIVMSG", "NOTICE", "TAGMSG"] and
                 not self.cap_agreed(CAP_ECHO)):
             new_line = line.with_source(self.hostmask())
             emit = self.parse_tokens(new_line)
