@@ -1,5 +1,5 @@
 
-def _collapse(pattern: str) -> str:
+def collapse(pattern: str) -> str:
     out = ""
     i = 0
     while i < len(pattern):
