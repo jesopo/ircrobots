@@ -11,6 +11,7 @@ from async_timeout      import timeout
 from ircstates          import Emit, Channel, ChannelUser
 from ircstates.numerics import *
 from ircstates.server   import ServerDisconnectedException
+from ircstates.names    import Name
 from irctokens          import build, Line, tokenise
 
 from .ircv3     import (CAPContext, sts_transmute, CAP_ECHO, CAP_SASL,
@@ -457,7 +458,9 @@ class Server(IServer):
 
         fut = self.send(build("WHOIS", args))
         async def _assure() -> Optional[Whois]:
-            params = [ANY, Folded(self.casefold(target))]
+            folded = self.casefold(target)
+            params = [ANY, Folded(folded)]
+
             obj = Whois()
             while True:
                 line = await self.wait_for(Responses([
@@ -498,7 +501,10 @@ class Server(IServer):
                             symbols += channel[0]
                             channel =  channel[1:]
 
-                        channel_user = ChannelUser()
+                        channel_user = ChannelUser(
+                            Name(obj.nickname, folded),
+                            Name(channel, self.casefold(channel))
+                        )
                         for symbol in symbols:
                             mode = self.isupport.prefix.from_prefix(symbol)
                             if mode is not None:
