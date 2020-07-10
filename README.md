@@ -8,3 +8,7 @@ to add/remove servers.
 
 ## usage
 see [examples/](examples/) for some usage demonstration.
+
+## contact
+
+Come say hi at [##irctokens on freenode](https://webchat.freenode.net/?channels=%23%23irctokens)
