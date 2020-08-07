@@ -202,7 +202,7 @@ class Server(IServer):
             line = await self.wait_for(end)
 
 
-    async def _next_lines(self) -> AsyncIterable[Tuple[Line, Optional[Emit]]]:
+    async def _next_lines(self) -> AsyncIterable[Line]:
         ping_sent = False
         while True:
             try:
@@ -225,8 +225,8 @@ class Server(IServer):
                 self.disconnected = True
                 raise
 
-            for both in lines:
-                yield both
+            for line in lines:
+                yield line
 
     async def _line_or_wait(self,
             line_aw: asyncio.Task
@@ -246,8 +246,8 @@ class Server(IServer):
 
     async def _read_lines(self) -> AsyncIterable[Tuple[Line, Optional[Emit]]]:
         async with anyio.create_task_group() as tg:
-            async for both in self._next_lines():
-                line, emit = both
+            async for line in self._next_lines():
+                emit = self.parse_tokens(line)
                 self.line_preread(line)
 
                 for i, wait_for in enumerate(self._wait_fors):
@@ -263,7 +263,7 @@ class Server(IServer):
                         await new_wait
                     await tg.spawn(_aw)
 
-                yield both
+                yield (line, emit)
 
     async def wait_for(self,
             response: Union[IMatchResponse, Set[IMatchResponse]],
