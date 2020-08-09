@@ -7,7 +7,7 @@ from time        import monotonic
 
 import anyio
 from asyncio_throttle   import Throttler
-from async_timeout      import timeout
+from async_timeout      import timeout as timeout_
 from ircstates          import Emit, Channel, ChannelUser
 from ircstates.numerics import *
 from ircstates.server   import ServerDisconnectedException
@@ -206,7 +206,7 @@ class Server(IServer):
         ping_sent = False
         while True:
             try:
-                async with timeout(PING_TIMEOUT):
+                async with timeout_(PING_TIMEOUT):
                     data = await self._reader.read(1024)
             except asyncio.TimeoutError:
                 if ping_sent:
@@ -268,7 +268,7 @@ class Server(IServer):
     async def wait_for(self,
             response: Union[IMatchResponse, Set[IMatchResponse]],
             sent_aw:  Optional[Awaitable[SentLine]]=None,
-            wtimeout: float=WAIT_TIMEOUT
+            timeout: float=WAIT_TIMEOUT
             ) -> Line:
 
         response_obj: IMatchResponse
@@ -290,7 +290,7 @@ class Server(IServer):
             label = str(sent_line.id)
             our_wait_for.with_label(label)
 
-        async with timeout(WAIT_TIMEOUT):
+        async with timeout_(timeout):
             return (await our_wait_for)
 
     async def _on_send_line(self, line: Line):
