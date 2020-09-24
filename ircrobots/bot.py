@@ -36,13 +36,12 @@ class Bot(IBot):
         return server
 
     async def _run_server(self, server: Server):
-        async with anyio.create_task_group() as tg:
-            async def _read():
-                while True:
-                    async for line, emit in server._read_lines():
-                        pass
-            await tg.spawn(_read)
-            await tg.spawn(server._send_lines)
+        try:
+            async with anyio.create_task_group() as tg:
+                await tg.spawn(server._read_lines)
+                await tg.spawn(server._send_lines)
+        except ServerDisconnectedException:
+            server.disconnected = True
 
         await self.disconnected(server)
 

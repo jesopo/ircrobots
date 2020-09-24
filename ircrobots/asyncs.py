@@ -1,7 +1,8 @@
 from asyncio    import Future
-from irctokens  import Line
 from typing     import (Any, Awaitable, Callable, Generator, Generic, Optional,
     TypeVar)
+
+from irctokens  import Line
 from .matching  import IMatchResponse
 from .interface import IServer
 from .ircv3     import TAG_LABEL
@@ -17,8 +18,10 @@ class MaybeAwait(Generic[TEvent]):
 
 class WaitFor(object):
     def __init__(self,
-            response: IMatchResponse):
-        self.response  = response
+            response: IMatchResponse,
+            deadline: float):
+        self.response = response
+        self.deadline = deadline
         self._label:   Optional[str] = None
         self._our_fut: "Future[Line]" = Future()
 
