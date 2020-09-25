@@ -170,6 +170,9 @@ class Server(IServer):
                 await self.send(build("WHO", [self.nickname]))
                 self.set_throttle(THROTTLE_RATE, THROTTLE_TIME)
 
+                if self.params.autojoin:
+                    await self._batch_joins(self.params.autojoin)
+
             elif emit.command == "CAP":
                 if emit.subcommand    == "NEW":
                     await self._cap_ls(emit)
@@ -189,6 +192,16 @@ class Server(IServer):
                         await self._serial_who()
 
         await self.line_read(line)
+
+    async def _batch_joins(self,
+            channels: List[str],
+            batch_n:  int=10):
+        #TODO: do as many JOINs in one line as we can fit
+        #TODO: channel keys
+
+        for i in range(0, len(channels), batch_n):
+            batch = channels[i:i+batch_n]
+            await self.send(build("JOIN", [",".join(batch)]))
 
     async def _serial_who(self):
         while self._pending_who:

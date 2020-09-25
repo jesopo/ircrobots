@@ -1,5 +1,5 @@
-from typing      import Optional
-from dataclasses import dataclass
+from typing      import List, Optional
+from dataclasses import dataclass, field
 
 class SASLParams(object):
     mechanism: str
@@ -47,3 +47,5 @@ class ConnectionParams(object):
     resume: Optional[ResumePolicy] = None
 
     reconnect: int = 10 # seconds
+
+    autojoin:  List[str] = field(default_factory=list)
