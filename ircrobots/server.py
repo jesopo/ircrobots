@@ -165,6 +165,13 @@ class Server(IServer):
         if line.command == "PING":
             await self.send(build("PONG", line.params))
 
+        elif line.command == RPL_ENDOFWHO:
+            chan = self.casefold(line.params[1])
+            if (self._pending_who and
+                    self._pending_who[0] == chan):
+                self._pending_who.pop()
+                await self._next_who()
+
         elif emit is not None:
             if emit.command == "001":
                 await self.send(build("WHO", [self.nickname]))
@@ -185,11 +192,15 @@ class Server(IServer):
 
             elif emit.command == "JOIN":
                 if emit.self and not emit.channel is None:
-                    await self.send(build("MODE", [emit.channel.name]))
+                    chan  = emit.channel.name_lower
+                    await self.send(build("MODE", [chan]))
 
-                    self._pending_who.append(emit.channel.name)
+                    modes = "".join(self.isupport.chanmodes.a_modes)
+                    await self.send(build("MODE", [chan, f"+{modes}"]))
+
+                    self._pending_who.append(chan)
                     if len(self._pending_who) == 1:
-                        await self._serial_who()
+                        await self._next_who()
 
         await self.line_read(line)
 
@@ -203,17 +214,13 @@ class Server(IServer):
             batch = channels[i:i+batch_n]
             await self.send(build("JOIN", [",".join(batch)]))
 
-    async def _serial_who(self):
-        while self._pending_who:
-            next = self._pending_who.popleft()
+    async def _next_who(self):
+        if self._pending_who:
+            chan = self._pending_who[0]
             if self.isupport.whox:
-                await self.send(self.prepare_whox(next))
+                await self.send(self.prepare_whox(chan))
             else:
-                await self.send(build("WHO", [next]))
-
-            end = Response(RPL_ENDOFWHO, [ANY, Folded(next)])
-            line = await self.wait_for(end)
-
+                await self.send(build("WHO", [chan]))
 
     async def _read_line(self, timeout: float) -> Optional[Line]:
         while True:
