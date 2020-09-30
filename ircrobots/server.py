@@ -172,7 +172,7 @@ class Server(IServer):
             chan = self.casefold(line.params[1])
             if (self._pending_who and
                     self._pending_who[0] == chan):
-                self._pending_who.pop()
+                self._pending_who.popleft()
                 await self._next_who()
 
         elif (line.command == ERR_NICKNAMEINUSE and
