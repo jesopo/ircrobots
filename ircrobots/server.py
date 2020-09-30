@@ -69,7 +69,8 @@ class Server(IServer):
         self._wait_for:     Optional[Tuple[Awaitable, WaitFor]] = None
         self._wait_for_fut: Optional[Future[WaitFor]] = None
 
-        self._pending_who: Deque[str] = deque()
+        self._pending_who:  Deque[str] = deque()
+        self._initial_nick: Optional[str] = None
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -139,6 +140,8 @@ class Server(IServer):
         username = self.params.username or nickname
         realname = self.params.realname or nickname
 
+        self._initial_nick = nickname
+
         # these must remain non-awaited; reading hasn't started yet
         if not self.params.password is None:
             self.send(build("PASS", [self.params.password]))
@@ -171,6 +174,21 @@ class Server(IServer):
                     self._pending_who[0] == chan):
                 self._pending_who.pop()
                 await self._next_who()
+
+        elif (line.command == ERR_NICKNAMEINUSE and
+                self._initial_nick is not None):
+            nick = self._initial_nick
+
+            alt_nicks = self.params.alt_nicknames
+            if not alt_nicks:
+                alt_nicks = [nick+"_"*i for i in range(3)]
+
+            for alt_nick in alt_nicks:
+                if await self.send_nick(alt_nick):
+                    break
+            else:
+                self._initial_nick = None
+                await self.send(build("QUIT"))
 
         elif emit is not None:
             if emit.command == "001":

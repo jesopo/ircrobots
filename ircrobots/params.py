@@ -46,6 +46,7 @@ class ConnectionParams(object):
     sts:    Optional[STSPolicy]    = None
     resume: Optional[ResumePolicy] = None
 
-    reconnect: int = 10 # seconds
+    reconnect:     int = 10 # seconds
+    alt_nicknames: List[str] = field(default_factory=list)
 
     autojoin:  List[str] = field(default_factory=list)
