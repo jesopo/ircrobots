@@ -274,7 +274,7 @@ class Server(IServer):
 
     async def _read_lines(self):
         waiting_lines: List[Tuple[Line, Optional[Emit]]] = []
-        sent_ping = True
+        sent_ping = False
         while True:
             now = monotonic()
             timeouts: List[float] = []
@@ -298,9 +298,11 @@ class Server(IServer):
                     if since >= (PING_TIMEOUT*2):
                         raise ServerDisconnectedException()
                     elif not sent_ping:
+                        sent_ping = True
                         await self.send(build("PING", ["hello"]))
                         continue
             else:
+                sent_ping = False
                 emit = self.parse_tokens(line)
 
                 waiting_lines.append((line, emit))
