@@ -69,8 +69,8 @@ class Server(IServer):
         self._wait_for:     Optional[Tuple[Awaitable, WaitFor]] = None
         self._wait_for_fut: Optional[Future[WaitFor]] = None
 
-        self._pending_who:  Deque[str] = deque()
-        self._initial_nick: Optional[str] = None
+        self._pending_who: Deque[str] = deque()
+        self._alt_nicks:   List[str] = []
 
     def hostmask(self) -> str:
         hostmask = self.nickname
@@ -140,7 +140,10 @@ class Server(IServer):
         username = self.params.username or nickname
         realname = self.params.realname or nickname
 
-        self._initial_nick = nickname
+        alt_nicks = self.params.alt_nicknames
+        if not alt_nicks:
+            alt_nicks = [nickname+"_"*i for i in range(1, 4)]
+        self._alt_nicks =  alt_nicks
 
         # these must remain non-awaited; reading hasn't started yet
         if not self.params.password is None:
@@ -176,18 +179,11 @@ class Server(IServer):
                 await self._next_who()
 
         elif (line.command == ERR_NICKNAMEINUSE and
-                self._initial_nick is not None):
-            nick = self._initial_nick
-
-            alt_nicks = self.params.alt_nicknames
-            if not alt_nicks:
-                alt_nicks = [nick+"_"*i for i in range(3)]
-
-            for alt_nick in alt_nicks:
-                if await self.send_nick(alt_nick):
-                    break
+                not self.registered):
+            if self._alt_nicks:
+                nick = self._alt_nicks.pop(0)
+                await self.send(build("NICK", [nick]))
             else:
-                self._initial_nick = None
                 await self.send(build("QUIT"))
 
         elif emit is not None:
