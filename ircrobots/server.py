@@ -202,7 +202,7 @@ class Server(IServer):
             await self._check_regain(line.params[1].split(","))
         elif (line.command in ["NICK", "QUIT"] and
                 line.source is not None):
-            await self._check_regain(line.hostmask.nickname)
+            await self._check_regain([line.hostmask.nickname])
 
         elif emit is not None:
             if emit.command == RPL_WELCOME:
