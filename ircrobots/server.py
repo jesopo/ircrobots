@@ -186,6 +186,24 @@ class Server(IServer):
             else:
                 await self.send(build("QUIT"))
 
+        elif line.command in [RPL_ENDOFMOTD, ERR_NOMOTD]:
+            # we didn't get the nickname we wanted. watch for it if we can
+            if not self.nickname == self.params.nickname:
+                target = self.params.nickname
+                if self.isupport.monitor is not None:
+                    await self.send(build("MONITOR", ["+", target]))
+                elif self.isupport.watch is not None:
+                    await self.send(build("WATCH", [f"+{target}"]))
+
+        # has someone just stopped using the nickname we want?
+        elif line.command == RPL_LOGOFF:
+            await self._check_regain([line.params[1]])
+        elif line.command == RPL_MONOFFLINE:
+            await self._check_regain(line.params[1].split(","))
+        elif (line.command in ["NICK", "QUIT"] and
+                line.source is not None):
+            await self._check_regain(line.hostmask.nickname)
+
         elif emit is not None:
             if emit.command == "001":
                 await self.send(build("WHO", [self.nickname]))
@@ -217,6 +235,12 @@ class Server(IServer):
                         await self._next_who()
 
         await self.line_read(line)
+
+    async def _check_regain(self, nicks: List[str]):
+        for nick in nicks:
+            if (self.casefold_equals(nick, self.params.nickname) and
+                    not self.nickname == self.params.nickname):
+                await self.send(build("NICK", [self.params.nickname]))
 
     async def _batch_joins(self,
             channels: List[str],
