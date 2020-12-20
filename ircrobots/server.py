@@ -205,7 +205,7 @@ class Server(IServer):
             await self._check_regain(line.hostmask.nickname)
 
         elif emit is not None:
-            if emit.command == "001":
+            if emit.command == RPL_WELCOME:
                 await self.send(build("WHO", [self.nickname]))
                 self.set_throttle(THROTTLE_RATE, THROTTLE_TIME)
 
