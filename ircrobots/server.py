@@ -54,8 +54,7 @@ class Server(IServer):
 
         self.disconnected = False
 
-        self.throttle = Throttler(
-            rate_limit=100, period=THROTTLE_TIME)
+        self.throttle = Throttler(rate_limit=100, period=1)
 
         self.sasl_state = SASLResult.NONE
         self.last_read  = monotonic()
