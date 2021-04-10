@@ -1,6 +1,6 @@
 anyio            ~=2.0.2
 asyncio-throttle ~=1.0.1
 dataclasses      ~=0.6; python_version<"3.7"
-ircstates        ~=0.11.7
+ircstates        ~=0.11.8
 async_stagger    ~=0.3.0
 async_timeout    ~=3.0.1
