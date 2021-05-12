@@ -67,6 +67,7 @@ class Server(IServer):
         self._read_queue:    Deque[Line] = deque()
         self._process_queue: Deque[Line] = deque()
 
+        self._ping_sent   = False
         self._read_lguard = RLock()
         self.read_lock    = self._read_lguard
         self._read_lwork  = asyncio.Lock()
@@ -281,7 +282,6 @@ class Server(IServer):
                 self._read_queue.append(line)
 
     async def _read_lines(self):
-        ping_sent = False
         while True:
             async with self._read_lguard:
                 pass
@@ -297,13 +297,12 @@ class Server(IServer):
 
                     for done in dones:
                         if isinstance(done.result(), Line):
-                            ping_sent = False
-                            line      = done.result()
-                            self._process_queue.append(line)
+                            self._ping_sent = False
+                            self._process_queue.append(done.result())
                         elif done.result() is None:
-                            if not ping_sent:
+                            if not self._ping_sent:
                                 await self.send(build("PING", ["hello"]))
-                                ping_sent = True
+                                self._ping_sent = True
                             else:
                                 await self.disconnect()
                                 raise ServerDisconnectedException()
@@ -334,6 +333,7 @@ class Server(IServer):
                     while True:
                         line = await self._read_line(timeout)
                         if line:
+                            self._ping_sent = False
                             self._process_queue.append(line)
                             if response_obj.match(self, line):
                                 return line
