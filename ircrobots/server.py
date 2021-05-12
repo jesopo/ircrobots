@@ -297,7 +297,8 @@ class Server(IServer):
 
                     for done in dones:
                         if isinstance(done.result(), Line):
-                            line = done.result()
+                            ping_sent = False
+                            line      = done.result()
                             self._process_queue.append(line)
                         elif done.result() is None:
                             if ping_sent:
