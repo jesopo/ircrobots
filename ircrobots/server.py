@@ -301,7 +301,7 @@ class Server(IServer):
                             line      = done.result()
                             self._process_queue.append(line)
                         elif done.result() is None:
-                            if ping_sent:
+                            if not ping_sent:
                                 await self.send(build("PING", ["hello"]))
                                 ping_sent = True
                             else:
