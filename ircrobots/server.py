@@ -65,7 +65,7 @@ class Server(IServer):
         self.desired_caps: Set[ICapability] = set([])
 
         self._read_queue:    Deque[Line] = deque()
-        self._process_queue: Deque[Line] = deque()
+        self._process_queue: Deque[Tuple[Line, Optional[Emit]]] = deque()
 
         self._ping_sent   = False
         self._read_lguard = RLock()
@@ -298,7 +298,9 @@ class Server(IServer):
                     for done in dones:
                         if isinstance(done.result(), Line):
                             self._ping_sent = False
-                            self._process_queue.append(done.result())
+                            line = done.result()
+                            emit = self.parse_tokens(line)
+                            self._process_queue.append((line, emit))
                         elif done.result() is None:
                             if not self._ping_sent:
                                 await self.send(build("PING", ["hello"]))
@@ -310,8 +312,7 @@ class Server(IServer):
                         notdone.cancel()
 
             else:
-                line = self._process_queue.popleft()
-                emit = self.parse_tokens(line)
+                line, emit = self._process_queue.popleft()
                 await self._on_read(line, emit)
 
     async def wait_for(self,
@@ -334,7 +335,8 @@ class Server(IServer):
                         line = await self._read_line(timeout)
                         if line:
                             self._ping_sent = False
-                            self._process_queue.append(line)
+                            emit = self.parse_tokens(line)
+                            self._process_queue.append((line, emit))
                             if response_obj.match(self, line):
                                 return line
 
