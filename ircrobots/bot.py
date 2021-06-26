@@ -1,4 +1,4 @@
-import asyncio
+import asyncio, traceback
 import anyio
 from typing import Dict
 
@@ -13,20 +13,30 @@ class Bot(IBot):
         self.servers: Dict[str, Server] = {}
         self._server_queue: asyncio.Queue[Server] = asyncio.Queue()
 
-    # methods designed to be overridden
     def create_server(self, name: str):
         return Server(self, name)
+
     async def disconnected(self, server: IServer):
         if (server.name in self.servers and
                 server.params is not None and
                 server.disconnected):
-            await asyncio.sleep(server.params.reconnect)
-            await self.add_server(server.name, server.params)
-    # /methods designed to be overridden
+
+            reconnect = server.params.reconnect
+
+            while True:
+                await asyncio.sleep(reconnect)
+                try:
+                    await self.add_server(server.name, server.params)
+                except Exception as e:
+                    traceback.print_exc()
+                    # let's try again, exponential backoff up to 5 mins
+                    reconnect = min(reconnect*2, 300)
+                else:
+                    break
 
     async def disconnect(self, server: IServer):
-        await server.disconnect()
         del self.servers[server.name]
+        await server.disconnect()
 
     async def add_server(self, name: str, params: ConnectionParams) -> Server:
         server = self.create_server(name)
