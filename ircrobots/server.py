@@ -182,7 +182,7 @@ class Server(IServer):
                 self._pending_who.popleft()
                 await self._next_who()
 
-        elif (line.command == ERR_NICKNAMEINUSE and
+        elif (line.command in {ERR_NICKNAMEINUSE, ERR_ERRONEUSNICKNAME} and
                 not self.registered):
             if self._alt_nicks:
                 nick = self._alt_nicks.pop(0)
