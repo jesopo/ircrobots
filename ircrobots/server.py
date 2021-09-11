@@ -554,7 +554,7 @@ class Server(IServer):
                         for symbol in symbols:
                             mode = self.isupport.prefix.from_prefix(symbol)
                             if mode is not None:
-                                channel_user.modes.append(mode)
+                                channel_user.modes.add(mode)
 
                         obj.channels.append(channel_user)
                 elif line.command == RPL_ENDOFWHOIS:
