@@ -152,6 +152,8 @@ class SASLContext(ServerContext):
                     return SASLResult.SUCCESS
                 elif line.command == "904":
                     match.pop(0)
+            else:
+                break
 
         return SASLResult.FAILURE
 
