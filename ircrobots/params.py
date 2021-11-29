@@ -50,3 +50,20 @@ class ConnectionParams(object):
     alt_nicknames: List[str] = field(default_factory=list)
 
     autojoin:  List[str] = field(default_factory=list)
+
+    @staticmethod
+    def from_hoststring(
+            nickname:   str,
+            hoststring: str
+            ) -> "ConnectionParams":
+
+        host, _, port_s = hoststring.strip().partition(":")
+
+        if port_s.startswith("+"):
+            tls    = True
+            port_s = port_s.lstrip("+") or "6697"
+        elif not port_s:
+            tls    = False
+            port_s = "6667"
+
+        return ConnectionParams(nickname, host, int(port_s), tls)
