@@ -29,6 +29,12 @@ class ResumePolicy(object):
     token:   str
 
 @dataclass
+class ClientTLSCertificate(object):
+    certfile: str
+    keyfile: Optional[str] = None
+    password: Optional[str] = None
+
+@dataclass
 class ConnectionParams(object):
     nickname: str
     host:     str
@@ -39,9 +45,10 @@ class ConnectionParams(object):
     realname: Optional[str] = None
     bindhost: Optional[str] = None
 
-    password:   Optional[str] = None
-    tls_verify: bool = True
-    sasl:       Optional[SASLParams] = None
+    password:    Optional[str] = None
+    tls_verify:  bool = True
+    sasl:        Optional[SASLParams] = None
+    certificate: Optional[ClientTLSCertificate] = None
 
     sts:    Optional[STSPolicy]    = None
     resume: Optional[ResumePolicy] = None

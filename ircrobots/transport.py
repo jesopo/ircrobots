@@ -4,6 +4,7 @@ from asyncio       import StreamReader, StreamWriter
 from async_stagger import open_connection
 
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
+from .params    import ClientTLSCertificate
 from .security  import tls_context
 
 class TCPReader(ITCPReader):
@@ -32,16 +33,17 @@ class TCPWriter(ITCPWriter):
 
 class TCPTransport(ITCPTransport):
     async def connect(self,
-            hostname:   str,
-            port:       int,
-            tls:        bool,
-            tls_verify: bool=True,
-            bindhost:   Optional[str]=None
+            hostname:    str,
+            port:        int,
+            tls:         bool,
+            tls_verify:  bool=True,
+            certificate: Optional[ClientTLSCertificate]=None,
+            bindhost:    Optional[str]=None
             ) -> Tuple[ITCPReader, ITCPWriter]:
 
         cur_ssl: Optional[SSLContext] = None
         if tls:
-            cur_ssl = tls_context(tls_verify)
+            cur_ssl = tls_context(tls_verify, certificate)
 
         local_addr: Optional[Tuple[str, int]] = None
         if not bindhost is None:
