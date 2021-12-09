@@ -65,5 +65,7 @@ class ConnectionParams(object):
         elif not port_s:
             tls    = False
             port_s = "6667"
+        else:
+            tls    = False
 
         return ConnectionParams(nickname, host, int(port_s), tls)
