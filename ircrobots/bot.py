@@ -6,7 +6,7 @@ from ircstates.server import ServerDisconnectedException
 
 from .server    import ConnectionParams, Server
 from .transport import TCPTransport
-from .interface import IBot, IServer
+from .interface import IBot, IServer, ITCPTransport
 
 class Bot(IBot):
     def __init__(self):
@@ -38,10 +38,13 @@ class Bot(IBot):
         del self.servers[server.name]
         await server.disconnect()
 
-    async def add_server(self, name: str, params: ConnectionParams) -> Server:
+    async def add_server(self,
+            name:      str,
+            params:    ConnectionParams,
+            transport: ITCPTransport = TCPTransport()) -> Server:
         server = self.create_server(name)
         self.servers[name] = server
-        await server.connect(TCPTransport(), params)
+        await server.connect(transport, params)
         await self._server_queue.put(server)
         return server
 
