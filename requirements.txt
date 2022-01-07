@@ -1,6 +1,6 @@
 anyio            ~=2.0.2
 asyncio-rlock    ~=0.1.0
 asyncio-throttle ~=1.0.1
-ircstates        ~=0.11.10
+ircstates        ~=0.11.11
 async_stagger    ~=0.3.0
 async_timeout    ~=3.0.1
