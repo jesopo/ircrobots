@@ -181,9 +181,9 @@ class Server(IServer):
                     self._pending_who[0] == chan):
                 self._pending_who.popleft()
                 await self._next_who()
-
-        elif (line.command in {ERR_NICKNAMEINUSE, ERR_ERRONEUSNICKNAME} and
-                not self.registered):
+        elif (line.command in {
+		ERR_NICKNAMEINUSE, ERR_ERRONEUSNICKNAME, ERR_UNAVAILRESOURCE
+	} and not self.registered):
             if self._alt_nicks:
                 nick = self._alt_nicks.pop(0)
                 await self.send(build("NICK", [nick]))
