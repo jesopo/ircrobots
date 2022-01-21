@@ -29,7 +29,7 @@ class ResumePolicy(object):
     token:   str
 
 @dataclass
-class ClientTLSCertificate(object):
+class ClientTLSKeypair(object):
     certfile: str
     keyfile: Optional[str] = None
     password: Optional[str] = None
@@ -48,7 +48,7 @@ class ConnectionParams(object):
     password:    Optional[str] = None
     tls_verify:  bool = True
     sasl:        Optional[SASLParams] = None
-    certificate: Optional[ClientTLSCertificate] = None
+    certificate: Optional[ClientTLSKeypair] = None
 
     sts:    Optional[STSPolicy]    = None
     resume: Optional[ResumePolicy] = None

@@ -4,7 +4,7 @@ from asyncio       import StreamReader, StreamWriter
 from async_stagger import open_connection
 
 from .interface import ITCPTransport, ITCPReader, ITCPWriter
-from .params    import ClientTLSCertificate
+from .params    import ClientTLSKeypair
 from .security  import tls_context
 
 class TCPReader(ITCPReader):
@@ -37,7 +37,7 @@ class TCPTransport(ITCPTransport):
             port:        int,
             tls:         bool,
             tls_verify:  bool=True,
-            certificate: Optional[ClientTLSCertificate]=None,
+            certificate: Optional[ClientTLSKeypair]=None,
             bindhost:    Optional[str]=None
             ) -> Tuple[ITCPReader, ITCPWriter]:
 

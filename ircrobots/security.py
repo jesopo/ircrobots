@@ -1,11 +1,11 @@
 import ssl
 
 from typing  import Optional
-from .params import ClientTLSCertificate
+from .params import ClientTLSKeypair
 
 def tls_context(
     verify: bool=True,
-    certificate: Optional[ClientTLSCertificate]=None
+    certificate: Optional[ClientTLSKeypair]=None
     ) -> ssl.SSLContext:
 
     context = ssl.SSLContext(ssl.PROTOCOL_TLS)

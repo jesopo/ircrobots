@@ -5,7 +5,7 @@ from enum    import IntEnum
 from ircstates import Server, Emit
 from irctokens import Line, Hostmask
 
-from .params   import ConnectionParams, SASLParams, STSPolicy, ResumePolicy, ClientTLSCertificate
+from .params   import ConnectionParams, SASLParams, STSPolicy, ResumePolicy, ClientTLSKeypair
 
 class ITCPReader(object):
     async def read(self, byte_count: int):
@@ -28,7 +28,7 @@ class ITCPTransport(object):
             port:        int,
             tls:         bool,
             tls_verify:  bool=True,
-            certificate: Optional[ClientTLSCertificate]=None,
+            certificate: Optional[ClientTLSKeypair]=None,
             bindhost:    Optional[str]=None
             ) -> Tuple[ITCPReader, ITCPWriter]:
         pass
