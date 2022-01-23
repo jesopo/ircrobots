@@ -23,7 +23,6 @@ async def main():
         "MyNickname",
         host = "chat.freenode.invalid",
         port = 6697,
-        tls  = True,
         sasl = sasl_params)
 
     await bot.add_server("freenode", params)

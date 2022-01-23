@@ -6,6 +6,7 @@ from ircstates import Server, Emit
 from irctokens import Line, Hostmask
 
 from .params   import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
+from .security import TLS
 
 class ITCPReader(object):
     async def read(self, byte_count: int):
@@ -24,11 +25,10 @@ class ITCPWriter(object):
 
 class ITCPTransport(object):
     async def connect(self,
-            hostname:   str,
-            port:       int,
-            tls:        bool,
-            tls_verify: bool=True,
-            bindhost:   Optional[str]=None
+            hostname: str,
+            port:     int,
+            tls:      Optional[TLS],
+            bindhost: Optional[str]=None
             ) -> Tuple[ITCPReader, ITCPWriter]:
         pass
 

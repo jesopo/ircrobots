@@ -124,9 +124,8 @@ class Server(IServer):
         reader, writer = await transport.connect(
             params.host,
             params.port,
-            tls       =params.tls,
-            tls_verify=params.tls_verify,
-            bindhost  =params.bindhost)
+            tls      =params.tls,
+            bindhost =params.bindhost)
 
         self._reader = reader
         self._writer = writer

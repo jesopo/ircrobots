@@ -25,7 +25,7 @@ class Bot(BaseBot):
 async def main():
     bot = Bot()
     for name, host in SERVERS:
-        params = ConnectionParams("BitBotNewTest", host, 6697, True)
+        params = ConnectionParams("BitBotNewTest", host, 6697)
         await bot.add_server(name, params)
 
     await bot.run()

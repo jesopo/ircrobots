@@ -154,8 +154,8 @@ async def main(hostname: str, channel: str, nickname: str):
     params = ConnectionParams(
         nickname,
         hostname,
-        6697,
-        tls=True)
+        6697
+    )
     await bot.add_server("freenode", params)
     await bot.run()
 

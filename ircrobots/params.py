@@ -1,5 +1,8 @@
+from re          import compile as re_compile
 from typing      import List, Optional
 from dataclasses import dataclass, field
+
+from .security import TLS, TLS_NOVERIFY, TLS_VERIFYCHAIN
 
 class SASLParams(object):
     mechanism: str
@@ -28,19 +31,24 @@ class ResumePolicy(object):
     address: str
     token:   str
 
+RE_IPV6HOST = re_compile("\[([a-fA-F0-9:]+)\]")
+
+_TLS_TYPES = {
+    "+": TLS_VERIFYCHAIN,
+    "~": TLS_NOVERIFY
+}
 @dataclass
 class ConnectionParams(object):
     nickname: str
     host:     str
     port:     int
-    tls:      bool
+    tls:      Optional[TLS] = TLS_VERIFYCHAIN
 
     username: Optional[str] = None
     realname: Optional[str] = None
     bindhost: Optional[str] = None
 
     password:   Optional[str] = None
-    tls_verify: bool = True
     sasl:       Optional[SASLParams] = None
 
     sts:    Optional[STSPolicy]    = None
@@ -57,15 +65,19 @@ class ConnectionParams(object):
             hoststring: str
             ) -> "ConnectionParams":
 
-        host, _, port_s = hoststring.strip().partition(":")
+        ipv6host = RE_IPV6HOST.search(hoststring)
+        if ipv6host is not None and ipv6host.start() == 0:
+            host = ipv6host.group(1)
+            port_s = hoststring[ipv6host.end()+1:]
+        else:
+            host, _, port_s = hoststring.strip().partition(":")
 
-        if port_s.startswith("+"):
-            tls    = True
-            port_s = port_s.lstrip("+") or "6697"
-        elif not port_s:
-            tls    = False
+        tls_type: Optional[TLS] = None
+        if not port_s:
             port_s = "6667"
         else:
-            tls    = False
+            tls_type = _TLS_TYPES.get(port_s[0], None)
+            if tls_type is not None:
+                port_s = port_s[1:] or "6697"
 
-        return ConnectionParams(nickname, host, int(port_s), tls)
+        return ConnectionParams(nickname, host, int(port_s), tls_type)
