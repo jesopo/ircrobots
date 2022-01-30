@@ -1,51 +1,62 @@
-from typing    import List
-from enum      import Enum
-from base64    import b64decode, b64encode
-from irctokens import build
-from ircstates.numerics import *
+from base64 import b64decode, b64encode
+from enum import Enum
+from typing import List
 
-from .matching import Responses, Response, ANY
+from ircstates.numerics import *
+from irctokens import build
+
 from .contexts import ServerContext
-from .params   import SASLParams, SASLUserPass, SASLSCRAM, SASLExternal
-from .scram    import SCRAMContext, SCRAMAlgorithm
+from .matching import ANY, Response, Responses
+from .params import SASLSCRAM, SASLExternal, SASLParams, SASLUserPass
+from .scram import SCRAMAlgorithm, SCRAMContext
 
 SASL_SCRAM_MECHANISMS = [
     "SCRAM-SHA-512",
     "SCRAM-SHA-256",
     "SCRAM-SHA-1",
 ]
-SASL_USERPASS_MECHANISMS = SASL_SCRAM_MECHANISMS+["PLAIN"]
+SASL_USERPASS_MECHANISMS = SASL_SCRAM_MECHANISMS + ["PLAIN"]
+
 
 class SASLResult(Enum):
-    NONE    = 0
+    NONE = 0
     SUCCESS = 1
     FAILURE = 2
     ALREADY = 3
 
+
 class SASLError(Exception):
     pass
+
+
 class SASLUnknownMechanismError(SASLError):
     pass
+
 
 AUTH_BYTE_MAX = 400
 
 AUTHENTICATE_ANY = Response("AUTHENTICATE", [ANY])
 
-NUMERICS_FAIL    = Response(ERR_SASLFAIL)
-NUMERICS_INITIAL = Responses([
-    ERR_SASLFAIL, ERR_SASLALREADY, RPL_SASLMECHS, ERR_SASLABORTED
-])
-NUMERICS_LAST    = Responses([RPL_SASLSUCCESS, ERR_SASLFAIL])
+NUMERICS_FAIL = Response(ERR_SASLFAIL)
+NUMERICS_INITIAL = Responses(
+    [ERR_SASLFAIL, ERR_SASLALREADY, RPL_SASLMECHS, ERR_SASLABORTED]
+)
+NUMERICS_LAST = Responses([RPL_SASLSUCCESS, ERR_SASLFAIL])
+
 
 def _b64e(s: str):
     return b64encode(s.encode("utf8")).decode("ascii")
 
+
 def _b64eb(s: bytes) -> str:
     # encode-from-bytes
     return b64encode(s).decode("ascii")
+
+
 def _b64db(s: str) -> bytes:
     # decode-to-bytes
     return b64decode(s)
+
 
 class SASLContext(ServerContext):
     async def from_params(self, params: SASLParams) -> SASLResult:
@@ -57,15 +68,12 @@ class SASLContext(ServerContext):
             return await self.external()
         else:
             raise SASLUnknownMechanismError(
-                "SASLParams given with unknown mechanism "
-                f"{params.mechanism!r}")
+                "SASLParams given with unknown mechanism " f"{params.mechanism!r}"
+            )
 
     async def external(self) -> SASLResult:
         await self.server.send(build("AUTHENTICATE", ["EXTERNAL"]))
-        line = await self.server.wait_for({
-            AUTHENTICATE_ANY,
-            NUMERICS_INITIAL
-        })
+        line = await self.server.wait_for({AUTHENTICATE_ANY, NUMERICS_INITIAL})
 
         if line.command == "907":
             # we've done SASL already. cleanly abort
@@ -73,8 +81,8 @@ class SASLContext(ServerContext):
         elif line.command == "908":
             available = line.params[1].split(",")
             raise SASLUnknownMechanismError(
-                "Server does not support SASL EXTERNAL "
-                f"(it supports {available}")
+                "Server does not support SASL EXTERNAL " f"(it supports {available}"
+            )
         elif line.command == "AUTHENTICATE" and line.params[0] == "+":
             await self.server.send(build("AUTHENTICATE", ["+"]))
 
@@ -89,11 +97,12 @@ class SASLContext(ServerContext):
     async def scram(self, username: str, password: str) -> SASLResult:
         return await self.userpass(username, password, SASL_SCRAM_MECHANISMS)
 
-    async def userpass(self,
-            username:   str,
-            password:   str,
-            mechanisms: List[str]=SASL_USERPASS_MECHANISMS
-            ) -> SASLResult:
+    async def userpass(
+        self,
+        username: str,
+        password: str,
+        mechanisms: List[str] = SASL_USERPASS_MECHANISMS,
+    ) -> SASLResult:
         def _common(server_mechs) -> List[str]:
             mechs: List[str] = []
             for our_mech in mechanisms:
@@ -106,23 +115,21 @@ class SASLContext(ServerContext):
                 raise SASLUnknownMechanismError(
                     "No matching SASL mechanims. "
                     f"(we want: {mechanisms} "
-                    f"server has: {server_mechs})")
+                    f"server has: {server_mechs})"
+                )
 
         if self.server.available_caps["sasl"]:
             # CAP v3.2 tells us what mechs it supports
             available = self.server.available_caps["sasl"].split(",")
-            match     = _common(available)
+            match = _common(available)
         else:
             # CAP v3.1 does not. pick the pick and wait for 907 to inform us of
             # what mechanisms are supported
-            match     = mechanisms
+            match = mechanisms
 
         while match:
             await self.server.send(build("AUTHENTICATE", [match[0]]))
-            line = await self.server.wait_for({
-                AUTHENTICATE_ANY,
-                NUMERICS_INITIAL
-            })
+            line = await self.server.wait_for({AUTHENTICATE_ANY, NUMERICS_INITIAL})
 
             if line.command == "907":
                 # we've done SASL already. cleanly abort
@@ -130,7 +137,7 @@ class SASLContext(ServerContext):
             elif line.command == "908":
                 # prior to CAP v3.2 - ERR telling us which mechs are supported
                 available = line.params[1].split(",")
-                match     = _common(available)
+                match = _common(available)
                 await self.server.wait_for(NUMERICS_FAIL)
             elif line.command == "AUTHENTICATE" and line.params[0] == "+":
                 auth_text = ""
@@ -138,8 +145,7 @@ class SASLContext(ServerContext):
                 if match[0] == "PLAIN":
                     auth_text = f"{username}\0{username}\0{password}"
                 elif match[0].startswith("SCRAM-SHA-"):
-                    auth_text = await self._scram(
-                        match[0], username, password)
+                    auth_text = await self._scram(match[0], username, password)
 
                 if not auth_text == "+":
                     auth_text = _b64e(auth_text)
@@ -148,7 +154,7 @@ class SASLContext(ServerContext):
                     await self._send_auth_text(auth_text)
 
                 line = await self.server.wait_for(NUMERICS_LAST)
-                if line.command   == "903":
+                if line.command == "903":
                     return SASLResult.SUCCESS
                 elif line.command == "904":
                     match.pop(0)
@@ -157,11 +163,8 @@ class SASLContext(ServerContext):
 
         return SASLResult.FAILURE
 
-    async def _scram(self, algo_str: str,
-            username: str,
-            password: str) -> str:
-        algo_str_prep = algo_str.replace("SCRAM-", "", 1
-            ).replace("-", "").upper()
+    async def _scram(self, algo_str: str, username: str, password: str) -> str:
+        algo_str_prep = algo_str.replace("SCRAM-", "", 1).replace("-", "").upper()
         try:
             algo = SCRAMAlgorithm(algo_str_prep)
         except ValueError:
@@ -179,15 +182,15 @@ class SASLContext(ServerContext):
             line = await self.server.wait_for(AUTHENTICATE_ANY)
 
             server_final = _b64db(line.params[0])
-            verified     = scram.server_final(server_final)
-            #TODO PANIC if verified is false!
+            verified = scram.server_final(server_final)
+            # TODO PANIC if verified is false!
             return "+"
         else:
             return ""
 
     async def _send_auth_text(self, text: str):
         n = AUTH_BYTE_MAX
-        chunks = [text[i:i+n] for i in range(0, len(text), n)]
+        chunks = [text[i : i + n] for i in range(0, len(text), n)]
         if len(chunks[-1]) == 400:
             chunks.append("+")
 
