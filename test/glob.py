@@ -1,6 +1,7 @@
 import unittest
 from ircrobots import glob
 
+
 class GlobTestCollapse(unittest.TestCase):
     def test(self):
         c1 = glob.collapse("**?*")

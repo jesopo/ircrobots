@@ -1,4 +1,3 @@
-
 def collapse(pattern: str) -> str:
     out = ""
     i = 0
@@ -15,8 +14,9 @@ def collapse(pattern: str) -> str:
 
         if pattern[i:]:
             out += pattern[i]
-            i   += 1
+            i += 1
     return out
+
 
 def _match(pattern: str, s: str):
     i, j = 0, 0
@@ -45,10 +45,14 @@ def _match(pattern: str, s: str):
 
     return i == len(pattern)
 
+
 class Glob(object):
     def __init__(self, pattern: str):
         self._pattern = pattern
+
     def match(self, s: str) -> bool:
         return _match(self._pattern, s)
+
+
 def compile(pattern: str) -> Glob:
     return Glob(collapse(pattern))

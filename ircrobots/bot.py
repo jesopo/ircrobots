@@ -4,9 +4,10 @@ from typing import Dict
 
 from ircstates.server import ServerDisconnectedException
 
-from .server    import ConnectionParams, Server
+from .server import ConnectionParams, Server
 from .transport import TCPTransport
 from .interface import IBot, IServer, ITCPTransport
+
 
 class Bot(IBot):
     def __init__(self):
@@ -17,9 +18,11 @@ class Bot(IBot):
         return Server(self, name)
 
     async def disconnected(self, server: IServer):
-        if (server.name in self.servers and
-                server.params is not None and
-                server.disconnected):
+        if (
+            server.name in self.servers
+            and server.params is not None
+            and server.disconnected
+        ):
 
             reconnect = server.params.reconnect
 
@@ -30,7 +33,7 @@ class Bot(IBot):
                 except Exception as e:
                     traceback.print_exc()
                     # let's try again, exponential backoff up to 5 mins
-                    reconnect = min(reconnect*2, 300)
+                    reconnect = min(reconnect * 2, 300)
                 else:
                     break
 
@@ -38,10 +41,12 @@ class Bot(IBot):
         del self.servers[server.name]
         await server.disconnect()
 
-    async def add_server(self,
-            name:      str,
-            params:    ConnectionParams,
-            transport: ITCPTransport = TCPTransport()) -> Server:
+    async def add_server(
+        self,
+        name: str,
+        params: ConnectionParams,
+        transport: ITCPTransport = TCPTransport(),
+    ) -> Server:
         server = self.create_server(name)
         self.servers[name] = server
         await server.connect(transport, params)
