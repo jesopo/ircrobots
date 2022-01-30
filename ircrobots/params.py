@@ -1,6 +1,6 @@
+from dataclasses import dataclass, field
 from re import compile as re_compile
 from typing import List, Optional
-from dataclasses import dataclass, field
 
 from .security import TLS, TLS_NOVERIFY, TLS_VERIFYCHAIN
 

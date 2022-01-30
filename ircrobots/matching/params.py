@@ -1,14 +1,17 @@
 from re import compile as re_compile
 from typing import Optional, Pattern, Union
+
 from irctokens import Hostmask
+
+from .. import formatting
+from ..glob import Glob
+from ..glob import compile as glob_compile
 from ..interface import (
+    IMatchResponseHostmask,
     IMatchResponseParam,
     IMatchResponseValueParam,
-    IMatchResponseHostmask,
     IServer,
 )
-from ..glob import Glob, compile as glob_compile
-from .. import formatting
 
 
 class Any(IMatchResponseParam):

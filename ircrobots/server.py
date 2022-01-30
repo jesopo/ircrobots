@@ -1,5 +1,7 @@
 import asyncio
 from asyncio import Future, PriorityQueue
+from collections import deque
+from time import monotonic
 from typing import (
     AsyncIterable,
     Awaitable,
@@ -12,42 +14,42 @@ from typing import (
     Tuple,
     Union,
 )
-from collections import deque
-from time import monotonic
 
 import anyio
+from async_timeout import timeout as timeout_
 from asyncio_rlock import RLock
 from asyncio_throttle import Throttler
-from async_timeout import timeout as timeout_
-from ircstates import Emit, Channel, ChannelUser
+from ircstates import Channel, ChannelUser, Emit
+from ircstates.names import Name
 from ircstates.numerics import *
 from ircstates.server import ServerDisconnectedException
-from ircstates.names import Name
-from irctokens import build, Line, tokenise
+from irctokens import Line, build, tokenise
 
-from .ircv3 import (
-    CAPContext,
-    sts_transmute,
-    CAP_ECHO,
-    CAP_SASL,
-    CAP_LABEL,
-    LABEL_TAG_MAP,
-    resume_transmute,
-)
-from .sasl import SASLContext, SASLResult
-from .matching import ResponseOr, Responses, Response, ANY, SELF, MASK_SELF, Folded
 from .asyncs import MaybeAwait, WaitFor
-from .struct import Whois
-from .params import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
 from .interface import (
     IBot,
     ICapability,
-    IServer,
-    SentLine,
-    SendPriority,
     IMatchResponse,
+    IServer,
+    ITCPReader,
+    ITCPTransport,
+    ITCPWriter,
+    SendPriority,
+    SentLine,
 )
-from .interface import ITCPTransport, ITCPReader, ITCPWriter
+from .ircv3 import (
+    CAP_ECHO,
+    CAP_LABEL,
+    CAP_SASL,
+    LABEL_TAG_MAP,
+    CAPContext,
+    resume_transmute,
+    sts_transmute,
+)
+from .matching import ANY, MASK_SELF, SELF, Folded, Response, ResponseOr, Responses
+from .params import ConnectionParams, ResumePolicy, SASLParams, STSPolicy
+from .sasl import SASLContext, SASLResult
+from .struct import Whois
 
 THROTTLE_RATE = 4  # lines
 THROTTLE_TIME = 2  # seconds

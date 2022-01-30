@@ -1,13 +1,14 @@
-from typing import List
-from enum import Enum
 from base64 import b64decode, b64encode
-from irctokens import build
-from ircstates.numerics import *
+from enum import Enum
+from typing import List
 
-from .matching import Responses, Response, ANY
+from ircstates.numerics import *
+from irctokens import build
+
 from .contexts import ServerContext
-from .params import SASLParams, SASLUserPass, SASLSCRAM, SASLExternal
-from .scram import SCRAMContext, SCRAMAlgorithm
+from .matching import ANY, Response, Responses
+from .params import SASLSCRAM, SASLExternal, SASLParams, SASLUserPass
+from .scram import SCRAMAlgorithm, SCRAMContext
 
 SASL_SCRAM_MECHANISMS = [
     "SCRAM-SHA-512",

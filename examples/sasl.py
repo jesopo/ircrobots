@@ -1,9 +1,11 @@
 import asyncio
 
-from irctokens import build, Line
+from irctokens import Line, build
+
+from ircrobots import SASLSCRAM
 from ircrobots import Bot as BaseBot
+from ircrobots import ConnectionParams, SASLUserPass
 from ircrobots import Server as BaseServer
-from ircrobots import ConnectionParams, SASLUserPass, SASLSCRAM
 
 
 class Server(BaseServer):

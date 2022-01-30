@@ -1,10 +1,12 @@
 from typing import List, Optional, Sequence, Union
+
 from irctokens import Line
+
 from ..interface import (
-    IServer,
     IMatchResponse,
-    IMatchResponseParam,
     IMatchResponseHostmask,
+    IMatchResponseParam,
+    IServer,
 )
 from .params import *
 

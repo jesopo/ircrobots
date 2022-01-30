@@ -1,13 +1,14 @@
+from dataclasses import dataclass
 from time import time
 from typing import Dict, Iterable, List, Optional, Tuple
-from dataclasses import dataclass
-from irctokens import build
+
 from ircstates.server import ServerDisconnectedException
+from irctokens import build
 
 from .contexts import ServerContext
-from .matching import Response, ANY
 from .interface import ICapability
-from .params import ConnectionParams, STSPolicy, ResumePolicy
+from .matching import ANY, Response
+from .params import ConnectionParams, ResumePolicy, STSPolicy
 from .security import TLS_VERIFYCHAIN
 
 

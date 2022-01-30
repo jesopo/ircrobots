@@ -1,6 +1,10 @@
-import base64, hashlib, hmac, os
+import base64
+import hashlib
+import hmac
+import os
 from enum import Enum
 from typing import Dict
+
 
 # IANA Hash Function Textual Names
 # https://tools.ietf.org/html/rfc5802#section-4

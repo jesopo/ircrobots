@@ -1,12 +1,13 @@
-import asyncio, traceback
-import anyio
+import asyncio
+import traceback
 from typing import Dict
 
+import anyio
 from ircstates.server import ServerDisconnectedException
 
+from .interface import IBot, IServer, ITCPTransport
 from .server import ConnectionParams, Server
 from .transport import TCPTransport
-from .interface import IBot, IServer, ITCPTransport
 
 
 class Bot(IBot):

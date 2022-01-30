@@ -1,11 +1,11 @@
 from asyncio import Future
-from typing import Awaitable, Iterable, List, Optional, Set, Tuple, Union
 from enum import IntEnum
+from typing import Awaitable, Iterable, List, Optional, Set, Tuple, Union
 
-from ircstates import Server, Emit
-from irctokens import Line, Hostmask
+from ircstates import Emit, Server
+from irctokens import Hostmask, Line
 
-from .params import ConnectionParams, SASLParams, STSPolicy, ResumePolicy
+from .params import ConnectionParams, ResumePolicy, SASLParams, STSPolicy
 from .security import TLS
 
 

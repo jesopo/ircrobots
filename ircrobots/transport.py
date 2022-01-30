@@ -1,11 +1,12 @@
+from asyncio import StreamReader, StreamWriter
 from hashlib import sha512
 from ssl import SSLContext
 from typing import Optional, Tuple
-from asyncio import StreamReader, StreamWriter
+
 from async_stagger import open_connection
 
-from .interface import ITCPTransport, ITCPReader, ITCPWriter
-from .security import tls_context, TLS, TLSNoVerify, TLSVerifyHash, TLSVerifySHA512
+from .interface import ITCPReader, ITCPTransport, ITCPWriter
+from .security import TLS, TLSNoVerify, TLSVerifyHash, TLSVerifySHA512, tls_context
 
 
 class TCPReader(ITCPReader):

@@ -2,9 +2,10 @@ from asyncio import Future
 from typing import Any, Awaitable, Callable, Generator, Generic, Optional, TypeVar
 
 from irctokens import Line
-from .matching import IMatchResponse
+
 from .interface import IServer
 from .ircv3 import TAG_LABEL
+from .matching import IMatchResponse
 
 TEvent = TypeVar("TEvent")
 
