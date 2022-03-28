@@ -73,8 +73,7 @@ class Formatless(IMatchResponseParam):
     def __init__(self, value: TYPE_MAYBELIT_VALUE):
         self._value = _assure_lit(value)
     def __repr__(self) -> str:
-        brepr = super().__repr__()
-        return f"Formatless({brepr})"
+        return f"Formatless({self._value!r})"
     def match(self, server: IServer, arg: str) -> bool:
         strip = formatting.strip(arg)
         return self._value.match(server, strip)
