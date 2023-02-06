@@ -43,6 +43,9 @@ class TCPTransport(ITCPTransport):
         cur_ssl: Optional[SSLContext] = None
         if tls is not None:
             cur_ssl = tls_context(not isinstance(tls, TLSNoVerify))
+            if tls.client_keypair is not None:
+                (client_cert, client_key) = tls.client_keypair
+                cur_ssl.load_cert_chain(client_cert, keyfile=client_key)
 
         local_addr: Optional[Tuple[str, int]] = None
         if not bindhost is None:

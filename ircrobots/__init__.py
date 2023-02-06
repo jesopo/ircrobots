@@ -3,3 +3,4 @@ from .server import Server
 from .params import (ConnectionParams, SASLUserPass, SASLExternal, SASLSCRAM,
     STSPolicy, ResumePolicy)
 from .ircv3  import Capability
+from .security import TLS

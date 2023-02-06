@@ -1,7 +1,10 @@
 import ssl
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
+@dataclass
 class TLS:
-    pass
+    client_keypair: Optional[Tuple[str, str]] = None
 
 # tls without verification
 class TLSNoVerify(TLS):
