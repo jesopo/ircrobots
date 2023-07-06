@@ -287,9 +287,10 @@ class Server(IServer):
 
             if not self._process_queue:
                 async with self._read_lwork:
-                    read_aw  = self._read_line(PING_TIMEOUT)
+                    read_aw = asyncio.create_task(self._read_line(PING_TIMEOUT))
+                    wait_aw = asyncio.create_task(self._wait_for.wait())
                     dones, notdones = await asyncio.wait(
-                        [read_aw, self._wait_for.wait()],
+                        [read_aw, wait_aw],
                         return_when=asyncio.FIRST_COMPLETED
                     )
                     self._wait_for.clear()
