@@ -9,12 +9,10 @@ class TLS:
 # tls without verification
 class TLSNoVerify(TLS):
     pass
-TLS_NOVERIFY = TLSNoVerify()
 
 # verify via CAs
 class TLSVerifyChain(TLS):
     pass
-TLS_VERIFYCHAIN = TLSVerifyChain()
 
 # verify by a pinned hash
 class TLSVerifyHash(TLSNoVerify):

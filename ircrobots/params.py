@@ -2,7 +2,7 @@ from re          import compile as re_compile
 from typing      import List, Optional
 from dataclasses import dataclass, field
 
-from .security import TLS, TLS_NOVERIFY, TLS_VERIFYCHAIN
+from .security import TLS, TLSNoVerify, TLSVerifyChain
 
 class SASLParams(object):
     mechanism: str
@@ -34,15 +34,15 @@ class ResumePolicy(object):
 RE_IPV6HOST = re_compile("\[([a-fA-F0-9:]+)\]")
 
 _TLS_TYPES = {
-    "+": TLS_VERIFYCHAIN,
-    "~": TLS_NOVERIFY
+    "+": TLSVerifyChain,
+    "~": TLSNoVerify,
 }
 @dataclass
 class ConnectionParams(object):
     nickname: str
     host:     str
     port:     int
-    tls:      Optional[TLS] = TLS_VERIFYCHAIN
+    tls:      Optional[TLS] = field(default_factory=TLSVerifyChain)
 
     username: Optional[str] = None
     realname: Optional[str] = None
@@ -76,7 +76,7 @@ class ConnectionParams(object):
         if not port_s:
             port_s = "6667"
         else:
-            tls_type = _TLS_TYPES.get(port_s[0], None)
+            tls_type = _TLS_TYPES.get(port_s[0], lambda: None)()
             if tls_type is not None:
                 port_s = port_s[1:] or "6697"
 
