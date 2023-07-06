@@ -8,7 +8,7 @@ from .contexts  import ServerContext
 from .matching  import Response, ANY
 from .interface import ICapability
 from .params    import ConnectionParams, STSPolicy, ResumePolicy
-from .security  import TLS_VERIFYCHAIN
+from .security  import TLSVerifyChain
 
 class Capability(ICapability):
     def __init__(self,
@@ -107,7 +107,7 @@ async def sts_transmute(params: ConnectionParams):
         since = (now-params.sts.created)
         if since <= params.sts.duration:
             params.port = params.sts.port
-            params.tls  = TLS_VERIFYCHAIN
+            params.tls  = TLSVerifyChain()
 async def resume_transmute(params: ConnectionParams):
     if params.resume is not None:
         params.host = params.resume.address
@@ -183,7 +183,7 @@ class CAPContext(ServerContext):
             if not params.tls:
                 if "port" in sts_dict:
                     params.port = int(sts_dict["port"])
-                    params.tls  = TLS_VERIFYCHAIN
+                    params.tls  = TLSVerifyChain()
 
                     await self.server.bot.disconnect(self.server)
                     await self.server.bot.add_server(self.server.name, params)
