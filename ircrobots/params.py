@@ -31,7 +31,7 @@ class ResumePolicy(object):
     address: str
     token:   str
 
-RE_IPV6HOST = re_compile("\[([a-fA-F0-9:]+)\]")
+RE_IPV6HOST = re_compile(r"\[([a-fA-F0-9:]+)\]")
 
 _TLS_TYPES = {
     "+": TLSVerifyChain,
